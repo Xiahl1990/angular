@@ -13,6 +13,7 @@ import {MockAnimationDriver} from '@angular/platform-browser/testing/mock_animat
 
 import {Component} from '../../index';
 import {DEFAULT_STATE} from '../../src/animation/animation_constants';
+import {AnimationGroupPlayer} from '../../src/animation/animation_group_player';
 import {AnimationKeyframe} from '../../src/animation/animation_keyframe';
 import {AnimationPlayer} from '../../src/animation/animation_player';
 import {AnimationStyles} from '../../src/animation/animation_styles';
@@ -58,7 +59,7 @@ function declareTests({useJit}: {useJit: boolean}) {
            const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
 
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var cmp = fixture.debugElement.componentInstance;
+           var cmp = fixture.componentInstance;
            cmp.exp = true;
            fixture.detectChanges();
            flushMicrotasks();
@@ -87,7 +88,7 @@ function declareTests({useJit}: {useJit: boolean}) {
 
            const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var cmp = fixture.debugElement.componentInstance;
+           var cmp = fixture.componentInstance;
 
            cmp.exp = true;
            fixture.detectChanges();
@@ -124,7 +125,7 @@ function declareTests({useJit}: {useJit: boolean}) {
 
            const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var cmp = fixture.debugElement.componentInstance;
+           var cmp = fixture.componentInstance;
            cmp.exp = 'state1';
            fixture.detectChanges();
 
@@ -163,7 +164,7 @@ function declareTests({useJit}: {useJit: boolean}) {
 
            const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var cmp = fixture.debugElement.componentInstance;
+           var cmp = fixture.componentInstance;
            cmp.exp = true;
            fixture.detectChanges();
            flushMicrotasks();
@@ -208,7 +209,7 @@ function declareTests({useJit}: {useJit: boolean}) {
 
            const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var cmp = fixture.debugElement.componentInstance;
+           var cmp = fixture.componentInstance;
            cmp.exp = true;
            fixture.detectChanges();
 
@@ -277,7 +278,7 @@ function declareTests({useJit}: {useJit: boolean}) {
 
              const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
              let fixture = TestBed.createComponent(DummyIfCmp);
-             var cmp = fixture.debugElement.componentInstance;
+             var cmp = fixture.componentInstance;
 
              cmp.exp = true;
              fixture.detectChanges();
@@ -333,7 +334,7 @@ function declareTests({useJit}: {useJit: boolean}) {
 
              const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
              let fixture = TestBed.createComponent(DummyIfCmp);
-             var cmp = fixture.debugElement.componentInstance;
+             var cmp = fixture.componentInstance;
 
              cmp.exp = true;
              fixture.detectChanges();
@@ -378,6 +379,30 @@ function declareTests({useJit}: {useJit: boolean}) {
              assertPlaying(player4, true);
              assertPlaying(player5, true);
            }));
+
+        it('should allow a group animation to be set as the entry point for an animation trigger',
+           fakeAsync(() => {
+             TestBed.overrideComponent(DummyIfCmp, {
+               set: {
+                 template: `<div *ngIf="exp" [@myAnimation]="exp"></div>`,
+                 animations: [trigger(
+                     'myAnimation', [transition('void => *', group([
+                                                  animate(1000, style({color: 'red'})),
+                                                  animate('1s 0.5s', style({fontSize: 10})),
+                                                ]))])]
+               }
+             });
+
+             const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
+             const fixture = TestBed.createComponent(DummyIfCmp);
+             const cmp = fixture.componentInstance;
+
+             cmp.exp = true;
+             fixture.detectChanges();
+
+             const player = driver.log[0]['player'];
+             expect(player.parentPlayer instanceof AnimationGroupPlayer).toBe(true);
+           }));
       });
 
 
@@ -402,7 +427,7 @@ function declareTests({useJit}: {useJit: boolean}) {
 
              const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
              let fixture = TestBed.createComponent(DummyIfCmp);
-             var cmp = fixture.debugElement.componentInstance;
+             var cmp = fixture.componentInstance;
              cmp.exp = true;
              fixture.detectChanges();
              flushMicrotasks();
@@ -441,7 +466,7 @@ function declareTests({useJit}: {useJit: boolean}) {
 
              const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
              let fixture = TestBed.createComponent(DummyIfCmp);
-             var cmp = fixture.debugElement.componentInstance;
+             var cmp = fixture.componentInstance;
              cmp.exp = true;
              fixture.detectChanges();
              flushMicrotasks();
@@ -473,7 +498,7 @@ function declareTests({useJit}: {useJit: boolean}) {
 
            const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var cmp = fixture.debugElement.componentInstance;
+           var cmp = fixture.componentInstance;
 
            cmp.exp = 'state1';
            fixture.detectChanges();
@@ -519,7 +544,7 @@ function declareTests({useJit}: {useJit: boolean}) {
 
            const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var cmp = fixture.debugElement.componentInstance;
+           var cmp = fixture.componentInstance;
 
            cmp.exp = true;
            fixture.detectChanges();
@@ -567,7 +592,7 @@ function declareTests({useJit}: {useJit: boolean}) {
 
            const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var cmp = fixture.debugElement.componentInstance;
+           var cmp = fixture.componentInstance;
 
            cmp.exp = 'start';
            cmp.exp2 = 'start';
@@ -614,7 +639,7 @@ function declareTests({useJit}: {useJit: boolean}) {
 
            const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var cmp = fixture.debugElement.componentInstance;
+           var cmp = fixture.componentInstance;
            cmp.exp = true;
            fixture.detectChanges();
            flushMicrotasks();
@@ -624,7 +649,7 @@ function declareTests({useJit}: {useJit: boolean}) {
            flushMicrotasks();
 
            var player = driver.log[0]['player'];
-           var container = fixture.debugElement.nativeElement;
+           var container = fixture.nativeElement;
            var ifElm = getDOM().querySelector(container, '.my-if');
            expect(ifElm).toBeTruthy();
 
@@ -652,7 +677,7 @@ function declareTests({useJit}: {useJit: boolean}) {
 
            const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var cmp = fixture.debugElement.componentInstance;
+           var cmp = fixture.componentInstance;
            cmp.exp = 'state1';
            fixture.detectChanges();
            flushMicrotasks();
@@ -691,7 +716,7 @@ function declareTests({useJit}: {useJit: boolean}) {
 
            const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var cmp = fixture.debugElement.componentInstance;
+           var cmp = fixture.componentInstance;
            cmp.exp = 'state1';
            cmp.exp2 = 'state1';
            fixture.detectChanges();
@@ -759,8 +784,8 @@ function declareTests({useJit}: {useJit: boolean}) {
 
              const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
              let fixture = TestBed.createComponent(DummyIfCmp);
-             var cmp = fixture.debugElement.componentInstance;
-             var parent = fixture.debugElement.nativeElement;
+             var cmp = fixture.componentInstance;
+             var parent = fixture.nativeElement;
              cmp.items = [0, 2, 4, 6, 8];
              fixture.detectChanges();
              flushMicrotasks();
@@ -788,8 +813,8 @@ function declareTests({useJit}: {useJit: boolean}) {
 
              const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
              let fixture = TestBed.createComponent(DummyIfCmp);
-             var cmp = fixture.debugElement.componentInstance;
-             var parent = fixture.debugElement.nativeElement;
+             var cmp = fixture.componentInstance;
+             var parent = fixture.nativeElement;
 
              cmp.items = [0, 1, 2, 3, 4];
              fixture.detectChanges();
@@ -854,8 +879,8 @@ function declareTests({useJit}: {useJit: boolean}) {
 
            const driver = TestBed.get(AnimationDriver) as InnerContentTrackingAnimationDriver;
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var cmp = fixture.debugElement.componentInstance;
-           var node = getDOM().querySelector(fixture.debugElement.nativeElement, '.target');
+           var cmp = fixture.componentInstance;
+           var node = getDOM().querySelector(fixture.nativeElement, '.target');
            cmp.exp = true;
            cmp.exp2 = true;
            fixture.detectChanges();
@@ -886,7 +911,7 @@ function declareTests({useJit}: {useJit: boolean}) {
 
            const driver = TestBed.get(AnimationDriver) as InnerContentTrackingAnimationDriver;
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var cmp = fixture.debugElement.componentInstance;
+           var cmp = fixture.componentInstance;
            cmp.exp = true;
            cmp.exp2 = true;
            fixture.detectChanges();
@@ -918,7 +943,7 @@ function declareTests({useJit}: {useJit: boolean}) {
 
            const driver = TestBed.get(AnimationDriver) as InnerContentTrackingAnimationDriver;
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var cmp = fixture.debugElement.componentInstance;
+           var cmp = fixture.componentInstance;
            cmp.exp = true;
            cmp.exp2 = true;
            fixture.detectChanges();
@@ -947,7 +972,7 @@ function declareTests({useJit}: {useJit: boolean}) {
 
            const driver = TestBed.get(AnimationDriver) as InnerContentTrackingAnimationDriver;
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var cmp = fixture.debugElement.componentInstance;
+           var cmp = fixture.componentInstance;
            cmp.exp = true;
            fixture.detectChanges();
            flushMicrotasks();
@@ -985,7 +1010,7 @@ function declareTests({useJit}: {useJit: boolean}) {
 
            const driver = TestBed.get(AnimationDriver) as InnerContentTrackingAnimationDriver;
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var cmp = fixture.debugElement.componentInstance;
+           var cmp = fixture.componentInstance;
            cmp.exp = true;
            cmp.exp2 = true;
            fixture.detectChanges();
@@ -1026,7 +1051,7 @@ function declareTests({useJit}: {useJit: boolean}) {
 
            const driver = TestBed.get(AnimationDriver) as InnerContentTrackingAnimationDriver;
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var cmp = fixture.debugElement.componentInstance;
+           var cmp = fixture.componentInstance;
            cmp.exp = true;
            cmp.exp2 = true;
            fixture.detectChanges();
@@ -1062,7 +1087,7 @@ function declareTests({useJit}: {useJit: boolean}) {
            let fixture = TestBed.createComponent(DummyIfCmp);
            var isAnimationRunning = false;
            var calls = 0;
-           var cmp = fixture.debugElement.componentInstance;
+           var cmp = fixture.componentInstance;
            cmp.callback = (e: AnimationTransitionEvent) => {
              isAnimationRunning = e.totalTime > 0;
              calls++;
@@ -1098,7 +1123,7 @@ function declareTests({useJit}: {useJit: boolean}) {
            let fixture = TestBed.createComponent(DummyIfCmp);
            var isAnimationRunning = false;
            var calls = 0;
-           var cmp = fixture.debugElement.componentInstance;
+           var cmp = fixture.componentInstance;
            cmp.callback = (e: AnimationTransitionEvent) => {
              isAnimationRunning = e.totalTime > 0;
              calls++;
@@ -1140,7 +1165,7 @@ function declareTests({useJit}: {useJit: boolean}) {
            const driver = TestBed.get(AnimationDriver) as InnerContentTrackingAnimationDriver;
            let fixture = TestBed.createComponent(DummyIfCmp);
            var eventData: AnimationTransitionEvent = null;
-           var cmp = fixture.debugElement.componentInstance;
+           var cmp = fixture.componentInstance;
            cmp.callback = (e: AnimationTransitionEvent) => { eventData = e; };
            cmp.exp = 'one';
            fixture.detectChanges();
@@ -1177,7 +1202,7 @@ function declareTests({useJit}: {useJit: boolean}) {
            let fixture = TestBed.createComponent(DummyIfCmp);
            var eventData1: AnimationTransitionEvent = null;
            var eventData2: AnimationTransitionEvent = null;
-           var cmp = fixture.debugElement.componentInstance;
+           var cmp = fixture.componentInstance;
            cmp.callback1 = (e: AnimationTransitionEvent) => { eventData1 = e; };
            cmp.callback2 = (e: AnimationTransitionEvent) => { eventData2 = e; };
            cmp.exp = 'one';
@@ -1322,7 +1347,7 @@ function declareTests({useJit}: {useJit: boolean}) {
            var ifCalls = 0;
            var loadingCalls = 0;
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var ifCmp = fixture.debugElement.componentInstance;
+           var ifCmp = fixture.componentInstance;
            var loadingCmp = fixture.debugElement.childNodes[1].componentInstance;
 
            ifCmp.callback = (e: any) => ifCalls++;
@@ -1365,7 +1390,7 @@ function declareTests({useJit}: {useJit: boolean}) {
 
            const driver = TestBed.get(AnimationDriver) as InnerContentTrackingAnimationDriver;
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var cmp = fixture.debugElement.componentInstance;
+           var cmp = fixture.componentInstance;
 
            var startCalls = [0, 0, 0, 0, 0];
            var doneCalls = [0, 0, 0, 0, 0];
@@ -1417,7 +1442,7 @@ function declareTests({useJit}: {useJit: boolean}) {
 
              const driver = TestBed.get(AnimationDriver) as InnerContentTrackingAnimationDriver;
              let fixture = TestBed.createComponent(DummyIfCmp);
-             var cmp = fixture.debugElement.componentInstance;
+             var cmp = fixture.componentInstance;
              cmp.exp = true;
              cmp.exp2 = 'blue';
              fixture.detectChanges();
@@ -1475,7 +1500,7 @@ function declareTests({useJit}: {useJit: boolean}) {
 
            const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
            let fixture = TestBed.createComponent(DummyLoadingCmp);
-           var cmp = fixture.debugElement.componentInstance;
+           var cmp = fixture.componentInstance;
            cmp.exp = 'final';
            fixture.detectChanges();
            flushMicrotasks();
@@ -1517,8 +1542,8 @@ function declareTests({useJit}: {useJit: boolean}) {
 
            const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var cmp = fixture.debugElement.componentInstance;
-           var node = getDOM().querySelector(fixture.debugElement.nativeElement, '.target');
+           var cmp = fixture.componentInstance;
+           var node = getDOM().querySelector(fixture.nativeElement, '.target');
            cmp.exp = 'final';
            fixture.detectChanges();
            flushMicrotasks();
@@ -1550,8 +1575,8 @@ function declareTests({useJit}: {useJit: boolean}) {
 
            const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var cmp = fixture.debugElement.componentInstance;
-           var node = getDOM().querySelector(fixture.debugElement.nativeElement, '.target');
+           var cmp = fixture.componentInstance;
+           var node = getDOM().querySelector(fixture.nativeElement, '.target');
            cmp.exp = 'green';
            fixture.detectChanges();
            flushMicrotasks();
@@ -1606,8 +1631,8 @@ function declareTests({useJit}: {useJit: boolean}) {
 
            const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var cmp = fixture.debugElement.componentInstance;
-           var node = getDOM().querySelector(fixture.debugElement.nativeElement, '.target');
+           var cmp = fixture.componentInstance;
+           var node = getDOM().querySelector(fixture.nativeElement, '.target');
            cmp.exp = 'final';
            fixture.detectChanges();
            flushMicrotasks();
@@ -1634,8 +1659,8 @@ function declareTests({useJit}: {useJit: boolean}) {
 
            const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var cmp = fixture.debugElement.componentInstance;
-           var node = getDOM().querySelector(fixture.debugElement.nativeElement, '.target');
+           var cmp = fixture.componentInstance;
+           var node = getDOM().querySelector(fixture.nativeElement, '.target');
            cmp.exp = 'final';
            fixture.detectChanges();
            flushMicrotasks();
@@ -1663,8 +1688,8 @@ function declareTests({useJit}: {useJit: boolean}) {
 
            const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var cmp = fixture.debugElement.componentInstance;
-           var node = getDOM().querySelector(fixture.debugElement.nativeElement, '.target');
+           var cmp = fixture.componentInstance;
+           var node = getDOM().querySelector(fixture.nativeElement, '.target');
 
            cmp.exp = 'a';
            fixture.detectChanges();
@@ -1719,8 +1744,8 @@ function declareTests({useJit}: {useJit: boolean}) {
 
            const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var cmp = fixture.debugElement.componentInstance;
-           var node = getDOM().querySelector(fixture.debugElement.nativeElement, '.target');
+           var cmp = fixture.componentInstance;
+           var node = getDOM().querySelector(fixture.nativeElement, '.target');
 
            cmp.exp = 'a';
            fixture.detectChanges();
@@ -1766,8 +1791,8 @@ function declareTests({useJit}: {useJit: boolean}) {
 
            const driver = TestBed.get(AnimationDriver) as MockAnimationDriver;
            let fixture = TestBed.createComponent(DummyIfCmp);
-           var cmp = fixture.debugElement.componentInstance;
-           var node = getDOM().querySelector(fixture.debugElement.nativeElement, '.target');
+           var cmp = fixture.componentInstance;
+           getDOM().querySelector(fixture.nativeElement, '.target');
 
            cmp.exp = 'final';
            fixture.detectChanges();
@@ -1818,27 +1843,25 @@ class InnerContentTrackingAnimationPlayer extends MockAnimationPlayer {
 @Component({
   selector: 'if-cmp',
   animations: [trigger('myAnimation', [])],
-  template: `
-    <div *ngIf="exp" [@myAnimation]="exp"></div>
-  `
+  template: `<div *ngIf="exp" [@myAnimation]="exp"></div>`
 })
 class DummyIfCmp {
-  exp = false;
-  exp2 = false;
+  exp: any = false;
+  exp2: any = false;
   items = [0, 1, 2, 3, 4];
   callback: Function = () => {};
+  callback1: Function = () => {};
+  callback2: Function = () => {};
 }
 
 @Component({
   selector: 'dummy-loading-cmp',
   host: {'[@loading]': 'exp'},
   animations: [trigger('loading', [])],
-  template: `
-    <div>loading...</div>
-  `
+  template: `<div>loading...</div>`
 })
 class DummyLoadingCmp {
-  exp = false;
+  exp: any = false;
   callback = () => {};
 }
 

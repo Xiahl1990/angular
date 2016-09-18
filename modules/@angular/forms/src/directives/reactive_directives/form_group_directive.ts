@@ -15,10 +15,10 @@ import {FormArray, FormControl, FormGroup} from '../../model';
 import {NG_ASYNC_VALIDATORS, NG_VALIDATORS, Validators} from '../../validators';
 import {ControlContainer} from '../control_container';
 import {Form} from '../form_interface';
-import {NgControl} from '../ng_control';
 import {ReactiveErrors} from '../reactive_errors';
 import {cleanUpControl, composeAsyncValidators, composeValidators, setUpControl, setUpFormContainer} from '../shared';
 
+import {FormControlName} from './form_control_name';
 import {FormArrayName, FormGroupName} from './form_group_name';
 
 export const formDirectiveProvider: any = {
@@ -27,72 +27,33 @@ export const formDirectiveProvider: any = {
 };
 
 /**
- * Binds an existing form group to a DOM element.  It requires importing the {@link
- * ReactiveFormsModule}.
+ * @whatItDoes Binds an existing {@link FormGroup} to a DOM element.
  *
- * In this example, we bind the form group to the form element, and we bind the login and
- * password controls to the login and password elements.
+ * @howToUse
  *
- *  ```typescript
- * @Component({
- *   selector: 'my-app',
- *   template: `
- *     <div>
- *       <h2>Binding an existing form group</h2>
- *       <form [formGroup]="loginForm">
- *         <p>Login: <input type="text" formControlName="login"></p>
- *         <p>Password: <input type="password" formControlName="password"></p>
- *       </form>
- *       <p>Value:</p>
- *       <pre>{{ loginForm.value | json}}</pre>
- *     </div>
- *   `
- * })
- * export class App {
- *   loginForm: FormGroup;
+ * This directive accepts an existing {@link FormGroup} instance. It will then use this
+ * {@link FormGroup} instance to match any child {@link FormControl}, {@link FormGroup},
+ * and {@link FormArray} instances to child {@link FormControlName}, {@link FormGroupName},
+ * and {@link FormArrayName} directives.
  *
- *   constructor() {
- *     this.loginForm = new FormGroup({
- *       login: new FormControl(""),
- *       password: new FormControl("")
- *     });
- *   }
+ * **Set value**: You can set the form's initial value when instantiating the
+ * {@link FormGroup}, or you can set it programmatically later using the {@link FormGroup}'s
+ * {@link AbstractControl.setValue} or {@link AbstractControl.patchValue} methods.
  *
- * }
- *  ```
+ * **Listen to value**: If you want to listen to changes in the value of the form, you can subscribe
+ * to the {@link FormGroup}'s {@link AbstractControl.valueChanges} event.  You can also listen to
+ * its {@link AbstractControl.statusChanges} event to be notified when the validation status is
+ * re-calculated.
  *
- * We can also use setValue() to populate the form programmatically.
+ * ### Example
  *
- *  ```typescript
- * @Component({
- *      selector: "login-comp",
- *      template: `
- *        <form [formGroup]='loginForm'>
- *          Login <input type='text' formControlName='login'>
- *          Password <input type='password' formControlName='password'>
- *          <button (click)="onLogin()">Login</button>
- *        </form>`
- *      })
- * class LoginComp {
- *  loginForm: FormGroup;
+ * In this example, we create form controls for first name and last name.
  *
- *  constructor() {
- *    this.loginForm = new FormGroup({
- *      login: new FormControl(''),
- *      password: new FormControl('')
- *    });
- *  }
+ * {@example forms/ts/simpleFormGroup/simple_form_group_example.ts region='Component'}
  *
- *  populate() {
- *    this.loginForm.setValue({ login: 'some login', password: 'some password'});
- *  }
+ * **npm package**: `@angular/forms`
  *
- *  onLogin(): void {
- *    // this.credentials.login === 'some login'
- *    // this.credentials.password === 'some password'
- *  }
- * }
- *  ```
+ * **NgModule**: {@link ReactiveFormsModule}
  *
  *  @stable
  */
@@ -105,7 +66,8 @@ export const formDirectiveProvider: any = {
 export class FormGroupDirective extends ControlContainer implements Form,
     OnChanges {
   private _submitted: boolean = false;
-  directives: NgControl[] = [];
+  private _oldForm: FormGroup;
+  directives: FormControlName[] = [];
 
   @Input('formGroup') form: FormGroup = null;
   @Output() ngSubmit = new EventEmitter();
@@ -119,12 +81,9 @@ export class FormGroupDirective extends ControlContainer implements Form,
   ngOnChanges(changes: SimpleChanges): void {
     this._checkFormPresent();
     if (StringMapWrapper.contains(changes, 'form')) {
-      var sync = composeValidators(this._validators);
-      this.form.validator = Validators.compose([this.form.validator, sync]);
-
-      var async = composeAsyncValidators(this._asyncValidators);
-      this.form.asyncValidator = Validators.composeAsync([this.form.asyncValidator, async]);
-      this._updateDomValue(changes);
+      this._updateValidators();
+      this._updateDomValue();
+      this._updateRegistrations();
     }
   }
 
@@ -136,16 +95,17 @@ export class FormGroupDirective extends ControlContainer implements Form,
 
   get path(): string[] { return []; }
 
-  addControl(dir: NgControl): void {
+  addControl(dir: FormControlName): FormControl {
     const ctrl: any = this.form.get(dir.path);
     setUpControl(ctrl, dir);
     ctrl.updateValueAndValidity({emitEvent: false});
     this.directives.push(dir);
+    return ctrl;
   }
 
-  getControl(dir: NgControl): FormControl { return <FormControl>this.form.get(dir.path); }
+  getControl(dir: FormControlName): FormControl { return <FormControl>this.form.get(dir.path); }
 
-  removeControl(dir: NgControl): void { ListWrapper.remove(this.directives, dir); }
+  removeControl(dir: FormControlName): void { ListWrapper.remove(this.directives, dir); }
 
   addFormGroup(dir: FormGroupName): void {
     var ctrl: any = this.form.get(dir.path);
@@ -167,7 +127,7 @@ export class FormGroupDirective extends ControlContainer implements Form,
 
   getFormArray(dir: FormArrayName): FormArray { return <FormArray>this.form.get(dir.path); }
 
-  updateModel(dir: NgControl, value: any): void {
+  updateModel(dir: FormControlName, value: any): void {
     var ctrl  = <FormControl>this.form.get(dir.path);
     ctrl.setValue(value);
   }
@@ -186,19 +146,31 @@ export class FormGroupDirective extends ControlContainer implements Form,
   }
 
   /** @internal */
-  _updateDomValue(changes: SimpleChanges) {
-    const oldForm = changes['form'].previousValue;
-
+  _updateDomValue() {
     this.directives.forEach(dir => {
       const newCtrl: any = this.form.get(dir.path);
-      const oldCtrl = oldForm.get(dir.path);
-      if (oldCtrl !== newCtrl) {
-        cleanUpControl(oldCtrl, dir);
+      if (dir._control !== newCtrl) {
+        cleanUpControl(dir._control, dir);
         if (newCtrl) setUpControl(newCtrl, dir);
+        dir._control = newCtrl;
       }
     });
 
     this.form._updateTreeValidity({emitEvent: false});
+  }
+
+  private _updateRegistrations() {
+    this.form._registerOnCollectionChange(() => this._updateDomValue());
+    if (this._oldForm) this._oldForm._registerOnCollectionChange(() => {});
+    this._oldForm = this.form;
+  }
+
+  private _updateValidators() {
+    const sync = composeValidators(this._validators);
+    this.form.validator = Validators.compose([this.form.validator, sync]);
+
+    const async = composeAsyncValidators(this._asyncValidators);
+    this.form.asyncValidator = Validators.composeAsync([this.form.asyncValidator, async]);
   }
 
   private _checkFormPresent() {

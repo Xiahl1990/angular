@@ -167,6 +167,7 @@ export declare class FormArray extends AbstractControl {
     reset(value?: any, {onlySelf}?: {
         onlySelf?: boolean;
     }): void;
+    setControl(index: number, control: AbstractControl): void;
     setValue(value: any[], {onlySelf}?: {
         onlySelf?: boolean;
     }): void;
@@ -272,6 +273,7 @@ export declare class FormGroup extends AbstractControl {
     reset(value?: any, {onlySelf}?: {
         onlySelf?: boolean;
     }): void;
+    setControl(name: string, control: AbstractControl): void;
     setValue(value: {
         [key: string]: any;
     }, {onlySelf}?: {
@@ -282,27 +284,27 @@ export declare class FormGroup extends AbstractControl {
 /** @stable */
 export declare class FormGroupDirective extends ControlContainer implements Form, OnChanges {
     control: FormGroup;
-    directives: NgControl[];
+    directives: FormControlName[];
     form: FormGroup;
     formDirective: Form;
     ngSubmit: EventEmitter<{}>;
     path: string[];
     submitted: boolean;
     constructor(_validators: any[], _asyncValidators: any[]);
-    addControl(dir: NgControl): void;
+    addControl(dir: FormControlName): FormControl;
     addFormArray(dir: FormArrayName): void;
     addFormGroup(dir: FormGroupName): void;
-    getControl(dir: NgControl): FormControl;
+    getControl(dir: FormControlName): FormControl;
     getFormArray(dir: FormArrayName): FormArray;
     getFormGroup(dir: FormGroupName): FormGroup;
     ngOnChanges(changes: SimpleChanges): void;
     onReset(): void;
     onSubmit(): boolean;
-    removeControl(dir: NgControl): void;
+    removeControl(dir: FormControlName): void;
     removeFormArray(dir: FormArrayName): void;
     removeFormGroup(dir: FormGroupName): void;
     resetForm(value?: any): void;
-    updateModel(dir: NgControl, value: any): void;
+    updateModel(dir: FormControlName, value: any): void;
 }
 
 /** @stable */
@@ -319,7 +321,7 @@ export declare class FormsModule {
 export declare class MaxLengthValidator implements Validator, OnChanges {
     maxlength: string;
     ngOnChanges(changes: SimpleChanges): void;
-    registerOnChange(fn: () => void): void;
+    registerOnValidatorChange(fn: () => void): void;
     validate(c: AbstractControl): {
         [key: string]: any;
     };
@@ -329,7 +331,7 @@ export declare class MaxLengthValidator implements Validator, OnChanges {
 export declare class MinLengthValidator implements Validator, OnChanges {
     minlength: string;
     ngOnChanges(changes: SimpleChanges): void;
-    registerOnChange(fn: () => void): void;
+    registerOnValidatorChange(fn: () => void): void;
     validate(c: AbstractControl): {
         [key: string]: any;
     };
@@ -431,7 +433,7 @@ export declare class NgSelectOption implements OnDestroy {
 export declare class PatternValidator implements Validator, OnChanges {
     pattern: string;
     ngOnChanges(changes: SimpleChanges): void;
-    registerOnChange(fn: () => void): void;
+    registerOnValidatorChange(fn: () => void): void;
     validate(c: AbstractControl): {
         [key: string]: any;
     };
@@ -444,7 +446,7 @@ export declare class ReactiveFormsModule {
 /** @stable */
 export declare class RequiredValidator implements Validator {
     required: boolean;
-    registerOnChange(fn: () => void): void;
+    registerOnValidatorChange(fn: () => void): void;
     validate(c: AbstractControl): {
         [key: string]: any;
     };
@@ -476,7 +478,7 @@ export declare class SelectMultipleControlValueAccessor implements ControlValueA
 
 /** @stable */
 export interface Validator {
-    registerOnChange?(fn: () => void): void;
+    registerOnValidatorChange?(fn: () => void): void;
     validate(c: AbstractControl): {
         [key: string]: any;
     };

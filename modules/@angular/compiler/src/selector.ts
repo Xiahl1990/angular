@@ -9,6 +9,7 @@
 
 import {ListWrapper} from './facade/collection';
 import {StringWrapper, isBlank, isPresent} from './facade/lang';
+import {getHtmlTagDefinition} from './ml_parser/html_tags';
 
 const _EMPTY_ATTR_VALUE = '';
 
@@ -91,17 +92,18 @@ export class CssSelector {
 
   /** Gets a template string for an element that matches the selector. */
   getMatchingElementTemplate(): string {
-    let tagName = isPresent(this.element) ? this.element : 'div';
-    let classAttr = this.classNames.length > 0 ? ` class="${this.classNames.join(' ')}"` : '';
+    const tagName = this.element || 'div';
+    const classAttr = this.classNames.length > 0 ? ` class="${this.classNames.join(' ')}"` : '';
 
     let attrs = '';
     for (let i = 0; i < this.attrs.length; i += 2) {
-      let attrName = this.attrs[i];
-      let attrValue = this.attrs[i + 1] !== '' ? `="${this.attrs[i + 1]}"` : '';
+      const attrName = this.attrs[i];
+      const attrValue = this.attrs[i + 1] !== '' ? `="${this.attrs[i + 1]}"` : '';
       attrs += ` ${attrName}${attrValue}`;
     }
 
-    return `<${tagName}${classAttr}${attrs}></${tagName}>`;
+    return getHtmlTagDefinition(tagName).isVoid ? `<${tagName}${classAttr}${attrs}/>` :
+                                                  `<${tagName}${classAttr}${attrs}></${tagName}>`;
   }
 
   addAttribute(name: string, value: string = _EMPTY_ATTR_VALUE) {

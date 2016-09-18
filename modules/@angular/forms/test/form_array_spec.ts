@@ -14,13 +14,11 @@ import {isPresent} from '../src/facade/lang';
 import {Validators} from '../src/validators';
 
 export function main() {
-  function asyncValidator(expected: any /** TODO #9100 */, timeouts = {}) {
-    return (c: any /** TODO #9100 */) => {
+  function asyncValidator(expected: string, timeouts = {}) {
+    return (c: AbstractControl) => {
       var resolve: (result: any) => void;
       var promise = new Promise(res => { resolve = res; });
-      var t = isPresent((timeouts as any /** TODO #9100 */)[c.value]) ?
-          (timeouts as any /** TODO #9100 */)[c.value] :
-          0;
+      var t = isPresent((timeouts as any)[c.value]) ? (timeouts as any)[c.value] : 0;
       var res = c.value != expected ? {'async': true} : null;
 
       if (t == 0) {
@@ -773,6 +771,95 @@ export function main() {
         expect(g.touched).toEqual(true);
       });
 
+      it('should keep empty, disabled arrays disabled when updating validity', () => {
+        const arr = new FormArray([]);
+        expect(arr.status).toEqual('VALID');
+
+        arr.disable();
+        expect(arr.status).toEqual('DISABLED');
+
+        arr.updateValueAndValidity();
+        expect(arr.status).toEqual('DISABLED');
+
+        arr.push(new FormControl({value: '', disabled: true}));
+        expect(arr.status).toEqual('DISABLED');
+
+        arr.push(new FormControl());
+        expect(arr.status).toEqual('VALID');
+      });
+
+      it('should re-enable empty, disabled arrays', () => {
+        const arr = new FormArray([]);
+        arr.disable();
+        expect(arr.status).toEqual('DISABLED');
+
+        arr.enable();
+        expect(arr.status).toEqual('VALID');
+      });
+
+      it('should not run validators on disabled controls', () => {
+        const validator = jasmine.createSpy('validator');
+        const arr = new FormArray([new FormControl()], validator);
+        expect(validator.calls.count()).toEqual(1);
+
+        arr.disable();
+        expect(validator.calls.count()).toEqual(1);
+
+        arr.setValue(['value']);
+        expect(validator.calls.count()).toEqual(1);
+
+        arr.enable();
+        expect(validator.calls.count()).toEqual(2);
+      });
+
+      describe('disabled errors', () => {
+        it('should clear out array errors when disabled', () => {
+          const arr = new FormArray([new FormControl()], () => { return {'expected': true}; });
+          expect(arr.errors).toEqual({'expected': true});
+
+          arr.disable();
+          expect(arr.errors).toEqual(null);
+
+          arr.enable();
+          expect(arr.errors).toEqual({'expected': true});
+        });
+
+        it('should re-populate array errors when enabled from a child', () => {
+          const arr = new FormArray([new FormControl()], () => { return {'expected': true}; });
+          arr.disable();
+          expect(arr.errors).toEqual(null);
+
+          arr.push(new FormControl());
+          expect(arr.errors).toEqual({'expected': true});
+        });
+
+        it('should clear out async array errors when disabled', fakeAsync(() => {
+             const arr = new FormArray([new FormControl()], null, asyncValidator('expected'));
+             tick();
+             expect(arr.errors).toEqual({'async': true});
+
+             arr.disable();
+             expect(arr.errors).toEqual(null);
+
+             arr.enable();
+             tick();
+             expect(arr.errors).toEqual({'async': true});
+           }));
+
+        it('should re-populate async array errors when enabled from a child', fakeAsync(() => {
+             const arr = new FormArray([new FormControl()], null, asyncValidator('expected'));
+             tick();
+             expect(arr.errors).toEqual({'async': true});
+
+             arr.disable();
+             expect(arr.errors).toEqual(null);
+
+             arr.push(new FormControl());
+             tick();
+             expect(arr.errors).toEqual({'async': true});
+           }));
+      });
+
       describe('disabled events', () => {
         let logger: string[];
         let c: FormControl;
@@ -802,6 +889,49 @@ export function main() {
 
           a.disable();
           expect(logger).toEqual(['control', 'array', 'form']);
+        });
+
+      });
+
+      describe('setControl()', () => {
+        let c: FormControl;
+        let a: FormArray;
+
+        beforeEach(() => {
+          c = new FormControl('one');
+          a = new FormArray([c]);
+        });
+
+        it('should replace existing control with new control', () => {
+          const c2 = new FormControl('new!', Validators.minLength(10));
+          a.setControl(0, c2);
+
+          expect(a.controls[0]).toEqual(c2);
+          expect(a.value).toEqual(['new!']);
+          expect(a.valid).toBe(false);
+        });
+
+        it('should add control if control did not exist before', () => {
+          const c2 = new FormControl('new!', Validators.minLength(10));
+          a.setControl(1, c2);
+
+          expect(a.controls[1]).toEqual(c2);
+          expect(a.value).toEqual(['one', 'new!']);
+          expect(a.valid).toBe(false);
+        });
+
+        it('should remove control if new control is null', () => {
+          a.setControl(0, null);
+          expect(a.controls[0]).not.toBeDefined();
+          expect(a.value).toEqual([]);
+        });
+
+        it('should only emit value change event once', () => {
+          const logger: string[] = [];
+          const c2 = new FormControl('new!');
+          a.valueChanges.subscribe(() => logger.push('change!'));
+          a.setControl(0, c2);
+          expect(logger).toEqual(['change!']);
         });
 
       });

@@ -26,6 +26,7 @@ exports.config = {
     'dist/all/**/e2e_test/**/*_spec.js'
   ],
   exclude: [
+    'dist/all/@angular/examples/**',
     '**/key_events/**',  // can't tell why this is failing
     '**/sourcemap/**'     // fails only on travis
   ],

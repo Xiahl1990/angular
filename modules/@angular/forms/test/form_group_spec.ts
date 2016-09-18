@@ -8,19 +8,17 @@
 
 import {async, fakeAsync, tick} from '@angular/core/testing';
 import {AsyncTestCompleter, beforeEach, ddescribe, describe, iit, inject, it, xit} from '@angular/core/testing/testing_internal';
-import {FormControl, FormGroup, Validators} from '@angular/forms';
+import {AbstractControl, FormControl, FormGroup, Validators} from '@angular/forms';
 
 import {EventEmitter} from '../src/facade/async';
 import {isPresent} from '../src/facade/lang';
 
 export function main() {
-  function asyncValidator(expected: any /** TODO #9100 */, timeouts = {}) {
-    return (c: any /** TODO #9100 */) => {
+  function asyncValidator(expected: string, timeouts = {}) {
+    return (c: AbstractControl) => {
       var resolve: (result: any) => void;
       var promise = new Promise(res => { resolve = res; });
-      var t = isPresent((timeouts as any /** TODO #9100 */)[c.value]) ?
-          (timeouts as any /** TODO #9100 */)[c.value] :
-          0;
+      var t = isPresent((timeouts as any)[c.value]) ? (timeouts as any)[c.value] : 0;
       var res = c.value != expected ? {'async': true} : null;
 
       if (t == 0) {
@@ -571,6 +569,13 @@ export function main() {
 
         expect(group.contains('optional')).toEqual(true);
       });
+
+      it('should support controls with dots in their name', () => {
+        expect(group.contains('some.name')).toBe(false);
+        group.addControl('some.name', new FormControl());
+
+        expect(group.contains('some.name')).toBe(true);
+      });
     });
 
 
@@ -775,6 +780,95 @@ export function main() {
         expect(g.touched).toEqual(true);
       });
 
+      it('should keep empty, disabled groups disabled when updating validity', () => {
+        const group = new FormGroup({});
+        expect(group.status).toEqual('VALID');
+
+        group.disable();
+        expect(group.status).toEqual('DISABLED');
+
+        group.updateValueAndValidity();
+        expect(group.status).toEqual('DISABLED');
+
+        group.addControl('one', new FormControl({value: '', disabled: true}));
+        expect(group.status).toEqual('DISABLED');
+
+        group.addControl('two', new FormControl());
+        expect(group.status).toEqual('VALID');
+      });
+
+      it('should re-enable empty, disabled groups', () => {
+        const group = new FormGroup({});
+        group.disable();
+        expect(group.status).toEqual('DISABLED');
+
+        group.enable();
+        expect(group.status).toEqual('VALID');
+      });
+
+      it('should not run validators on disabled controls', () => {
+        const validator = jasmine.createSpy('validator');
+        const g = new FormGroup({'one': new FormControl()}, validator);
+        expect(validator.calls.count()).toEqual(1);
+
+        g.disable();
+        expect(validator.calls.count()).toEqual(1);
+
+        g.setValue({one: 'value'});
+        expect(validator.calls.count()).toEqual(1);
+
+        g.enable();
+        expect(validator.calls.count()).toEqual(2);
+      });
+
+      describe('disabled errors', () => {
+        it('should clear out group errors when disabled', () => {
+          const g = new FormGroup({'one': new FormControl()}, () => { return {'expected': true}; });
+          expect(g.errors).toEqual({'expected': true});
+
+          g.disable();
+          expect(g.errors).toEqual(null);
+
+          g.enable();
+          expect(g.errors).toEqual({'expected': true});
+        });
+
+        it('should re-populate group errors when enabled from a child', () => {
+          const g = new FormGroup({'one': new FormControl()}, () => { return {'expected': true}; });
+          g.disable();
+          expect(g.errors).toEqual(null);
+
+          g.addControl('two', new FormControl());
+          expect(g.errors).toEqual({'expected': true});
+        });
+
+        it('should clear out async group errors when disabled', fakeAsync(() => {
+             const g = new FormGroup({'one': new FormControl()}, null, asyncValidator('expected'));
+             tick();
+             expect(g.errors).toEqual({'async': true});
+
+             g.disable();
+             expect(g.errors).toEqual(null);
+
+             g.enable();
+             tick();
+             expect(g.errors).toEqual({'async': true});
+           }));
+
+        it('should re-populate async group errors when enabled from a child', fakeAsync(() => {
+             const g = new FormGroup({'one': new FormControl()}, null, asyncValidator('expected'));
+             tick();
+             expect(g.errors).toEqual({'async': true});
+
+             g.disable();
+             expect(g.errors).toEqual(null);
+
+             g.addControl('two', new FormControl());
+             tick();
+             expect(g.errors).toEqual({'async': true});
+           }));
+      });
+
       describe('disabled events', () => {
         let logger: string[];
         let c: FormControl;
@@ -838,6 +932,49 @@ export function main() {
       it('should not emit events when turned off', () => {
         form._updateTreeValidity({emitEvent: false});
         expect(logger).toEqual([]);
+      });
+
+    });
+
+    describe('setControl()', () => {
+      let c: FormControl;
+      let g: FormGroup;
+
+      beforeEach(() => {
+        c = new FormControl('one');
+        g = new FormGroup({one: c});
+      });
+
+      it('should replace existing control with new control', () => {
+        const c2 = new FormControl('new!', Validators.minLength(10));
+        g.setControl('one', c2);
+
+        expect(g.controls['one']).toEqual(c2);
+        expect(g.value).toEqual({one: 'new!'});
+        expect(g.valid).toBe(false);
+      });
+
+      it('should add control if control did not exist before', () => {
+        const c2 = new FormControl('new!', Validators.minLength(10));
+        g.setControl('two', c2);
+
+        expect(g.controls['two']).toEqual(c2);
+        expect(g.value).toEqual({one: 'one', two: 'new!'});
+        expect(g.valid).toBe(false);
+      });
+
+      it('should remove control if new control is null', () => {
+        g.setControl('one', null);
+        expect(g.controls['one']).not.toBeDefined();
+        expect(g.value).toEqual({});
+      });
+
+      it('should only emit value change event once', () => {
+        const logger: string[] = [];
+        const c2 = new FormControl('new!');
+        g.valueChanges.subscribe(() => logger.push('change!'));
+        g.setControl('one', c2);
+        expect(logger).toEqual(['change!']);
       });
 
     });

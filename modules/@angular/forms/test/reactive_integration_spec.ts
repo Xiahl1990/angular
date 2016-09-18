@@ -6,16 +6,14 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {NgFor, NgIf} from '@angular/common';
 import {Component, Directive, EventEmitter, Input, Output, forwardRef} from '@angular/core';
-import {ComponentFixture, TestBed, fakeAsync, tick} from '@angular/core/testing';
-import {ControlValueAccessor, FormArray, FormControl, FormGroup, FormGroupDirective, FormsModule, NG_ASYNC_VALIDATORS, NG_VALIDATORS, NgControl, ReactiveFormsModule, Validator, Validators} from '@angular/forms';
+import {TestBed, fakeAsync, tick} from '@angular/core/testing';
+import {AbstractControl, ControlValueAccessor, FormArray, FormControl, FormGroup, FormGroupDirective, FormsModule, NG_ASYNC_VALIDATORS, NG_VALIDATORS, NG_VALUE_ACCESSOR, NgControl, ReactiveFormsModule, Validator, Validators} from '@angular/forms';
 import {By} from '@angular/platform-browser/src/dom/debug/by';
 import {getDOM} from '@angular/platform-browser/src/dom/dom_adapter';
 import {dispatchEvent} from '@angular/platform-browser/testing/browser_util';
 
 import {ListWrapper} from '../src/facade/collection';
-import {AbstractControl} from '../src/model';
 
 export function main() {
   describe('reactive forms integration tests', () => {
@@ -37,7 +35,7 @@ export function main() {
       it('should work with single controls', () => {
         const fixture = TestBed.createComponent(FormControlComp);
         const control = new FormControl('old value');
-        fixture.debugElement.componentInstance.control = control;
+        fixture.componentInstance.control = control;
         fixture.detectChanges();
 
         // model -> view
@@ -53,8 +51,7 @@ export function main() {
 
       it('should work with formGroups (model -> view)', () => {
         const fixture = TestBed.createComponent(FormGroupComp);
-        fixture.debugElement.componentInstance.form =
-            new FormGroup({'login': new FormControl('loginValue')});
+        fixture.componentInstance.form = new FormGroup({'login': new FormControl('loginValue')});
         fixture.detectChanges();
 
         const input = fixture.debugElement.query(By.css('input'));
@@ -64,7 +61,7 @@ export function main() {
       it('work with formGroups (view -> model)', () => {
         const fixture = TestBed.createComponent(FormGroupComp);
         const form = new FormGroup({'login': new FormControl('oldValue')});
-        fixture.debugElement.componentInstance.form = form;
+        fixture.componentInstance.form = form;
         fixture.detectChanges();
 
         const input = fixture.debugElement.query(By.css('input'));
@@ -80,12 +77,10 @@ export function main() {
 
       it('should update DOM elements initially', () => {
         const fixture = TestBed.createComponent(FormGroupComp);
-        fixture.debugElement.componentInstance.form =
-            new FormGroup({'login': new FormControl('oldValue')});
+        fixture.componentInstance.form = new FormGroup({'login': new FormControl('oldValue')});
         fixture.detectChanges();
 
-        fixture.debugElement.componentInstance.form =
-            new FormGroup({'login': new FormControl('newValue')});
+        fixture.componentInstance.form = new FormGroup({'login': new FormControl('newValue')});
         fixture.detectChanges();
 
         const input = fixture.debugElement.query(By.css('input'));
@@ -94,12 +89,11 @@ export function main() {
 
       it('should update model when UI changes', () => {
         const fixture = TestBed.createComponent(FormGroupComp);
-        fixture.debugElement.componentInstance.form =
-            new FormGroup({'login': new FormControl('oldValue')});
+        fixture.componentInstance.form = new FormGroup({'login': new FormControl('oldValue')});
         fixture.detectChanges();
 
         const newForm = new FormGroup({'login': new FormControl('newValue')});
-        fixture.debugElement.componentInstance.form = newForm;
+        fixture.componentInstance.form = newForm;
         fixture.detectChanges();
 
         const input = fixture.debugElement.query(By.css('input'));
@@ -117,12 +111,12 @@ export function main() {
       it('should work with radio buttons when reusing control', () => {
         const fixture = TestBed.createComponent(FormControlRadioButtons);
         const food = new FormControl('chicken');
-        fixture.debugElement.componentInstance.form =
+        fixture.componentInstance.form =
             new FormGroup({'food': food, 'drink': new FormControl('')});
         fixture.detectChanges();
 
         const newForm = new FormGroup({'food': food, 'drink': new FormControl('')});
-        fixture.debugElement.componentInstance.form = newForm;
+        fixture.componentInstance.form = newForm;
         fixture.detectChanges();
 
         newForm.setValue({food: 'fish', drink: ''});
@@ -134,7 +128,7 @@ export function main() {
 
       it('should update nested form group model when UI changes', () => {
         const fixture = TestBed.createComponent(NestedFormGroupComp);
-        fixture.debugElement.componentInstance.form = new FormGroup(
+        fixture.componentInstance.form = new FormGroup(
             {'signin': new FormGroup({'login': new FormControl(), 'password': new FormControl()})});
         fixture.detectChanges();
 
@@ -142,7 +136,7 @@ export function main() {
           'signin': new FormGroup(
               {'login': new FormControl('Nancy'), 'password': new FormControl('secret')})
         });
-        fixture.debugElement.componentInstance.form = newForm;
+        fixture.componentInstance.form = newForm;
         fixture.detectChanges();
 
         const inputs = fixture.debugElement.queryAll(By.css('input'));
@@ -168,7 +162,7 @@ export function main() {
           'max': new FormControl(''),
           'pattern': new FormControl('')
         });
-        fixture.debugElement.componentInstance.form = form;
+        fixture.componentInstance.form = form;
         fixture.detectChanges();
         expect(form.get('login').errors).toEqual({required: true});
 
@@ -178,7 +172,7 @@ export function main() {
           'max': new FormControl(''),
           'pattern': new FormControl('')
         });
-        fixture.debugElement.componentInstance.form = newForm;
+        fixture.componentInstance.form = newForm;
         fixture.detectChanges();
 
         expect(newForm.get('login').errors).toEqual({required: true});
@@ -190,7 +184,7 @@ export function main() {
           'signin':
               new FormGroup({'login': new FormControl(''), 'password': new FormControl('')})
         });
-        fixture.debugElement.componentInstance.form = form;
+        fixture.componentInstance.form = form;
         fixture.detectChanges();
         expect(form.get('signin').valid).toBe(false);
 
@@ -198,7 +192,7 @@ export function main() {
           'signin':
               new FormGroup({'login': new FormControl(''), 'password': new FormControl('')})
         });
-        fixture.debugElement.componentInstance.form = newForm;
+        fixture.componentInstance.form = newForm;
         fixture.detectChanges();
 
         expect(form.get('signin').valid).toBe(false);
@@ -210,7 +204,7 @@ export function main() {
           'signin':
               new FormGroup({'login': new FormControl(''), 'password': new FormControl('')})
         });
-        fixture.debugElement.componentInstance.form = form;
+        fixture.componentInstance.form = form;
         fixture.detectChanges();
 
         form.addControl('email', new FormControl('email'));
@@ -223,7 +217,7 @@ export function main() {
           'signin':
               new FormGroup({'login': new FormControl(''), 'password': new FormControl('')})
         });
-        fixture.debugElement.componentInstance.form = newForm;
+        fixture.componentInstance.form = newForm;
         fixture.detectChanges();
 
         emailInput = fixture.debugElement.query(By.css('[formControlName="email"]'));
@@ -234,8 +228,8 @@ export function main() {
         const fixture = TestBed.createComponent(FormArrayComp);
         const cityArray = new FormArray([new FormControl('SF'), new FormControl('NY')]);
         const form = new FormGroup({cities: cityArray});
-        fixture.debugElement.componentInstance.form = form;
-        fixture.debugElement.componentInstance.cityArray = cityArray;
+        fixture.componentInstance.form = form;
+        fixture.componentInstance.cityArray = cityArray;
         fixture.detectChanges();
 
         let inputs = fixture.debugElement.queryAll(By.css('input'));
@@ -248,14 +242,99 @@ export function main() {
 
         const newArr = new FormArray([new FormControl('SF'), new FormControl('NY')]);
         const newForm = new FormGroup({cities: newArr});
-        fixture.debugElement.componentInstance.form = newForm;
-        fixture.debugElement.componentInstance.cityArray = newArr;
+        fixture.componentInstance.form = newForm;
+        fixture.componentInstance.cityArray = newArr;
         fixture.detectChanges();
 
         inputs = fixture.debugElement.queryAll(By.css('input'));
         expect(inputs[2]).not.toBeDefined();
       });
 
+      describe('nested control rebinding', () => {
+
+        it('should attach dir to control when leaf control changes', () => {
+          const form = new FormGroup({'login': new FormControl('oldValue')});
+          const fixture = TestBed.createComponent(FormGroupComp);
+          fixture.componentInstance.form = form;
+          fixture.detectChanges();
+
+          form.removeControl('login');
+          form.addControl('login', new FormControl('newValue'));
+          fixture.detectChanges();
+
+          const input = fixture.debugElement.query(By.css('input'));
+          expect(input.nativeElement.value).toEqual('newValue');
+
+          input.nativeElement.value = 'user input';
+          dispatchEvent(input.nativeElement, 'input');
+          fixture.detectChanges();
+
+          expect(form.value).toEqual({login: 'user input'});
+
+          form.setValue({login: 'Carson'});
+          fixture.detectChanges();
+          expect(input.nativeElement.value).toEqual('Carson');
+        });
+
+        it('should attach dirs to all child controls when group control changes', () => {
+          const fixture = TestBed.createComponent(NestedFormGroupComp);
+          const form = new FormGroup({
+            signin: new FormGroup(
+                {login: new FormControl('oldLogin'), password: new FormControl('oldPassword')})
+          });
+          fixture.componentInstance.form = form;
+          fixture.detectChanges();
+
+          form.removeControl('signin');
+          form.addControl(
+              'signin',
+              new FormGroup(
+                  {login: new FormControl('newLogin'), password: new FormControl('newPassword')}));
+          fixture.detectChanges();
+
+          const inputs = fixture.debugElement.queryAll(By.css('input'));
+          expect(inputs[0].nativeElement.value).toEqual('newLogin');
+          expect(inputs[1].nativeElement.value).toEqual('newPassword');
+
+          inputs[0].nativeElement.value = 'user input';
+          dispatchEvent(inputs[0].nativeElement, 'input');
+          fixture.detectChanges();
+
+          expect(form.value).toEqual({signin: {login: 'user input', password: 'newPassword'}});
+
+          form.setValue({signin: {login: 'Carson', password: 'Drew'}});
+          fixture.detectChanges();
+          expect(inputs[0].nativeElement.value).toEqual('Carson');
+          expect(inputs[1].nativeElement.value).toEqual('Drew');
+        });
+
+        it('should attach dirs to all present child controls when array control changes', () => {
+          const fixture = TestBed.createComponent(FormArrayComp);
+          const cityArray = new FormArray([new FormControl('SF'), new FormControl('NY')]);
+          const form = new FormGroup({cities: cityArray});
+          fixture.componentInstance.form = form;
+          fixture.componentInstance.cityArray = cityArray;
+          fixture.detectChanges();
+
+          form.removeControl('cities');
+          form.addControl('cities', new FormArray([new FormControl('LA')]));
+          fixture.detectChanges();
+
+          const input = fixture.debugElement.query(By.css('input'));
+          expect(input.nativeElement.value).toEqual('LA');
+
+          input.nativeElement.value = 'MTV';
+          dispatchEvent(input.nativeElement, 'input');
+          fixture.detectChanges();
+
+          expect(form.value).toEqual({cities: ['MTV']});
+
+          form.setValue({cities: ['LA']});
+          fixture.detectChanges();
+          expect(input.nativeElement.value).toEqual('LA');
+        });
+
+      });
 
     });
 
@@ -264,8 +343,8 @@ export function main() {
         const fixture = TestBed.createComponent(FormArrayComp);
         const cityArray = new FormArray([new FormControl('SF'), new FormControl('NY')]);
         const form = new FormGroup({cities: cityArray});
-        fixture.debugElement.componentInstance.form = form;
-        fixture.debugElement.componentInstance.cityArray = cityArray;
+        fixture.componentInstance.form = form;
+        fixture.componentInstance.cityArray = cityArray;
         fixture.detectChanges();
 
         const inputs = fixture.debugElement.queryAll(By.css('input'));
@@ -287,8 +366,8 @@ export function main() {
         const fixture = TestBed.createComponent(FormArrayComp);
         const cityArray = new FormArray([new FormControl('SF'), new FormControl('NY')]);
         const form = new FormGroup({cities: cityArray});
-        fixture.debugElement.componentInstance.form = form;
-        fixture.debugElement.componentInstance.cityArray = cityArray;
+        fixture.componentInstance.form = form;
+        fixture.componentInstance.cityArray = cityArray;
         fixture.detectChanges();
 
         cityArray.push(new FormControl('LA'));
@@ -306,8 +385,8 @@ export function main() {
           new FormGroup({town: new FormControl('NY'), state: new FormControl('NY')})
         ]);
         const form = new FormGroup({cities: cityArray});
-        fixture.debugElement.componentInstance.form = form;
-        fixture.debugElement.componentInstance.cityArray = cityArray;
+        fixture.componentInstance.form = form;
+        fixture.componentInstance.cityArray = cityArray;
         fixture.detectChanges();
 
         const inputs = fixture.debugElement.queryAll(By.css('input'));
@@ -335,7 +414,7 @@ export function main() {
         const fixture = TestBed.createComponent(FormGroupComp);
         const login = new FormControl('oldValue');
         const form = new FormGroup({'login': login});
-        fixture.debugElement.componentInstance.form = form;
+        fixture.componentInstance.form = form;
         fixture.detectChanges();
 
         login.setValue('newValue');
@@ -350,7 +429,7 @@ export function main() {
            () => {
              const fixture = TestBed.createComponent(FormControlComp);
              const control = new FormControl({value: 'some value', disabled: true});
-             fixture.debugElement.componentInstance.control = control;
+             fixture.componentInstance.control = control;
              fixture.detectChanges();
 
              const input = fixture.debugElement.query(By.css('input'));
@@ -364,8 +443,8 @@ export function main() {
         it('should add disabled attribute to formControlName when instantiated as disabled', () => {
           const fixture = TestBed.createComponent(FormGroupComp);
           const control = new FormControl({value: 'some value', disabled: true});
-          fixture.debugElement.componentInstance.form = new FormGroup({login: control});
-          fixture.debugElement.componentInstance.control = control;
+          fixture.componentInstance.form = new FormGroup({login: control});
+          fixture.componentInstance.control = control;
           fixture.detectChanges();
 
           const input = fixture.debugElement.query(By.css('input'));
@@ -380,7 +459,7 @@ export function main() {
            () => {
              const fixture = TestBed.createComponent(FormControlComp);
              const control = new FormControl('some value');
-             fixture.debugElement.componentInstance.control = control;
+             fixture.componentInstance.control = control;
              fixture.detectChanges();
 
              control.disable();
@@ -398,7 +477,7 @@ export function main() {
            () => {
              const fixture = TestBed.createComponent(FormGroupComp);
              const form = new FormGroup({'login': new FormControl('login')});
-             fixture.debugElement.componentInstance.form = form;
+             fixture.componentInstance.form = form;
              fixture.detectChanges();
 
              form.disable();
@@ -416,7 +495,7 @@ export function main() {
         it('should not add disabled attribute to custom controls when disable() is called', () => {
           const fixture = TestBed.createComponent(MyInputForm);
           const control = new FormControl('some value');
-          fixture.debugElement.componentInstance.form = new FormGroup({login: control});
+          fixture.componentInstance.form = new FormGroup({login: control});
           fixture.detectChanges();
 
           control.disable();
@@ -436,7 +515,7 @@ export function main() {
         const fixture = TestBed.createComponent(FormGroupComp);
         const login = new FormControl('oldValue');
         const form = new FormGroup({'login': login});
-        fixture.debugElement.componentInstance.form = form;
+        fixture.componentInstance.form = form;
         fixture.detectChanges();
 
         const loginEl = fixture.debugElement.query(By.css('input'));
@@ -452,22 +531,20 @@ export function main() {
     describe('submit and reset events', () => {
       it('should emit ngSubmit event on submit', () => {
         const fixture = TestBed.createComponent(FormGroupComp);
-        fixture.debugElement.componentInstance.form =
-            new FormGroup({'login': new FormControl('loginValue')});
-        fixture.debugElement.componentInstance.data = 'should be changed';
+        fixture.componentInstance.form = new FormGroup({'login': new FormControl('loginValue')});
+        fixture.componentInstance.data = 'should be changed';
         fixture.detectChanges();
 
         const formEl = fixture.debugElement.query(By.css('form')).nativeElement;
         dispatchEvent(formEl, 'submit');
 
         fixture.detectChanges();
-        expect(fixture.debugElement.componentInstance.data).toEqual('submitted');
+        expect(fixture.componentInstance.data).toEqual('submitted');
       });
 
       it('should mark formGroup as submitted on submit event', () => {
         const fixture = TestBed.createComponent(FormGroupComp);
-        fixture.debugElement.componentInstance.form =
-            new FormGroup({'login': new FormControl('loginValue')});
+        fixture.componentInstance.form = new FormGroup({'login': new FormControl('loginValue')});
         fixture.detectChanges();
 
         const formGroupDir = fixture.debugElement.children[0].injector.get(FormGroupDirective);
@@ -484,7 +561,7 @@ export function main() {
         const fixture = TestBed.createComponent(FormGroupComp);
         const login = new FormControl('some value');
         const form = new FormGroup({'login': login});
-        fixture.debugElement.componentInstance.form = form;
+        fixture.componentInstance.form = form;
         fixture.detectChanges();
 
         const loginEl = fixture.debugElement.query(By.css('input')).nativeElement;
@@ -498,7 +575,7 @@ export function main() {
         const fixture = TestBed.createComponent(FormGroupComp);
         const login = new FormControl('some value');
         const form = new FormGroup({'login': login});
-        fixture.debugElement.componentInstance.form = form;
+        fixture.componentInstance.form = form;
         fixture.detectChanges();
 
         const loginEl = fixture.debugElement.query(By.css('input')).nativeElement;
@@ -515,7 +592,7 @@ export function main() {
       it('should mark controls as dirty before emitting a value change event', () => {
         const fixture = TestBed.createComponent(FormGroupComp);
         const login = new FormControl('oldValue');
-        fixture.debugElement.componentInstance.form = new FormGroup({'login': login});
+        fixture.componentInstance.form = new FormGroup({'login': login});
         fixture.detectChanges();
 
         login.valueChanges.subscribe(() => { expect(login.dirty).toBe(true); });
@@ -531,7 +608,7 @@ export function main() {
            const fixture = TestBed.createComponent(FormGroupComp);
            const login = new FormControl('oldValue');
            const form = new FormGroup({'login': login});
-           fixture.debugElement.componentInstance.form = form;
+           fixture.componentInstance.form = form;
            fixture.detectChanges();
 
            const loginEl = fixture.debugElement.query(By.css('input')).nativeElement;
@@ -551,7 +628,7 @@ export function main() {
       it('should work with single fields', () => {
         const fixture = TestBed.createComponent(FormControlComp);
         const control = new FormControl('', Validators.required);
-        fixture.debugElement.componentInstance.control = control;
+        fixture.componentInstance.control = control;
         fixture.detectChanges();
 
         const input = fixture.debugElement.query(By.css('input')).nativeElement;
@@ -572,7 +649,7 @@ export function main() {
       it('should work with single fields in parent forms', () => {
         const fixture = TestBed.createComponent(FormGroupComp);
         const form = new FormGroup({'login': new FormControl('', Validators.required)});
-        fixture.debugElement.componentInstance.form = form;
+        fixture.componentInstance.form = form;
         fixture.detectChanges();
 
         const input = fixture.debugElement.query(By.css('input')).nativeElement;
@@ -593,7 +670,7 @@ export function main() {
       it('should work with formGroup', () => {
         const fixture = TestBed.createComponent(FormGroupComp);
         const form = new FormGroup({'login': new FormControl('', Validators.required)});
-        fixture.debugElement.componentInstance.form = form;
+        fixture.componentInstance.form = form;
         fixture.detectChanges();
 
         const input = fixture.debugElement.query(By.css('input')).nativeElement;
@@ -622,7 +699,7 @@ export function main() {
             FormControlComp, {set: {template: `<input [formControl]="control">`}});
         const fixture = TestBed.createComponent(FormControlComp);
         const control = new FormControl('old');
-        fixture.debugElement.componentInstance.control = control;
+        fixture.componentInstance.control = control;
         fixture.detectChanges();
 
         // model -> view
@@ -639,7 +716,7 @@ export function main() {
       it('should support <input type=text>', () => {
         const fixture = TestBed.createComponent(FormGroupComp);
         const form = new FormGroup({'login': new FormControl('old')});
-        fixture.debugElement.componentInstance.form = form;
+        fixture.componentInstance.form = form;
         fixture.detectChanges();
 
         // model -> view
@@ -656,7 +733,7 @@ export function main() {
       it('should ignore the change event for <input type=text>', () => {
         const fixture = TestBed.createComponent(FormGroupComp);
         const form = new FormGroup({'login': new FormControl('oldValue')});
-        fixture.debugElement.componentInstance.form = form;
+        fixture.componentInstance.form = form;
         fixture.detectChanges();
 
         const input = fixture.debugElement.query(By.css('input'));
@@ -671,7 +748,7 @@ export function main() {
             FormControlComp, {set: {template: `<textarea [formControl]="control"></textarea>`}});
         const fixture = TestBed.createComponent(FormControlComp);
         const control = new FormControl('old');
-        fixture.debugElement.componentInstance.control = control;
+        fixture.componentInstance.control = control;
         fixture.detectChanges();
 
         // model -> view
@@ -690,7 +767,7 @@ export function main() {
             FormControlComp, {set: {template: `<input type="checkbox" [formControl]="control">`}});
         const fixture = TestBed.createComponent(FormControlComp);
         const control = new FormControl(true);
-        fixture.debugElement.componentInstance.control = control;
+        fixture.componentInstance.control = control;
         fixture.detectChanges();
 
         // model -> view
@@ -720,14 +797,14 @@ export function main() {
 
         // view -> model
         expect(sfOption.nativeElement.selected).toBe(false);
-        expect(fixture.debugElement.componentInstance.form.value).toEqual({'city': 'NY'});
+        expect(fixture.componentInstance.form.value).toEqual({'city': 'NY'});
       });
 
       describe('should support <type=number>', () => {
         it('with basic use case', () => {
           const fixture = TestBed.createComponent(FormControlNumberInput);
           const control = new FormControl(10);
-          fixture.debugElement.componentInstance.control = control;
+          fixture.componentInstance.control = control;
           fixture.detectChanges();
 
           // model -> view
@@ -744,7 +821,7 @@ export function main() {
         it('when value is cleared in the UI', () => {
           const fixture = TestBed.createComponent(FormControlNumberInput);
           const control = new FormControl(10, Validators.required);
-          fixture.debugElement.componentInstance.control = control;
+          fixture.componentInstance.control = control;
           fixture.detectChanges();
 
           const input = fixture.debugElement.query(By.css('input'));
@@ -764,7 +841,7 @@ export function main() {
         it('when value is cleared programmatically', () => {
           const fixture = TestBed.createComponent(FormControlNumberInput);
           const control = new FormControl(10);
-          fixture.debugElement.componentInstance.control = control;
+          fixture.componentInstance.control = control;
           fixture.detectChanges();
 
           control.setValue(null);
@@ -776,11 +853,11 @@ export function main() {
 
       describe('should support <type=radio>', () => {
 
-        it('should support <type=radio>', () => {
+        it('should support basic functionality', () => {
           const fixture = TestBed.createComponent(FormControlRadioButtons);
           const form =
               new FormGroup({'food': new FormControl('fish'), 'drink': new FormControl('sprite')});
-          fixture.debugElement.componentInstance.form = form;
+          fixture.componentInstance.form = form;
           fixture.detectChanges();
 
           // model -> view
@@ -803,12 +880,58 @@ export function main() {
           expect(inputs[1].nativeElement.checked).toEqual(true);
         });
 
+        it('should support an initial undefined value', () => {
+          const fixture = TestBed.createComponent(FormControlRadioButtons);
+          const form = new FormGroup({'food': new FormControl(), 'drink': new FormControl()});
+          fixture.componentInstance.form = form;
+          fixture.detectChanges();
+
+          const inputs = fixture.debugElement.queryAll(By.css('input'));
+          expect(inputs[0].nativeElement.checked).toEqual(false);
+          expect(inputs[1].nativeElement.checked).toEqual(false);
+        });
+
+        it('should reset properly', () => {
+          const fixture = TestBed.createComponent(FormControlRadioButtons);
+          const form =
+              new FormGroup({'food': new FormControl('fish'), 'drink': new FormControl('sprite')});
+          fixture.componentInstance.form = form;
+          fixture.detectChanges();
+
+          form.reset();
+          fixture.detectChanges();
+
+          const inputs = fixture.debugElement.queryAll(By.css('input'));
+          expect(inputs[0].nativeElement.checked).toEqual(false);
+          expect(inputs[1].nativeElement.checked).toEqual(false);
+        });
+
+        it('should set value to null and undefined properly', () => {
+          const fixture = TestBed.createComponent(FormControlRadioButtons);
+          const form = new FormGroup(
+              {'food': new FormControl('chicken'), 'drink': new FormControl('sprite')});
+          fixture.componentInstance.form = form;
+          fixture.detectChanges();
+
+          form.get('food').setValue(null);
+          fixture.detectChanges();
+
+          const inputs = fixture.debugElement.queryAll(By.css('input'));
+          expect(inputs[0].nativeElement.checked).toEqual(false);
+
+          form.get('food').setValue('chicken');
+          fixture.detectChanges();
+
+          form.get('food').setValue(undefined);
+          fixture.detectChanges();
+          expect(inputs[0].nativeElement.checked).toEqual(false);
+        });
+
         it('should use formControlName to group radio buttons when name is absent', () => {
           const fixture = TestBed.createComponent(FormControlRadioButtons);
           const foodCtrl = new FormControl('fish');
           const drinkCtrl = new FormControl('sprite');
-          fixture.debugElement.componentInstance.form =
-              new FormGroup({'food': foodCtrl, 'drink': drinkCtrl});
+          fixture.componentInstance.form = new FormGroup({'food': foodCtrl, 'drink': drinkCtrl});
           fixture.detectChanges();
 
           const inputs = fixture.debugElement.queryAll(By.css('input'));
@@ -821,7 +944,7 @@ export function main() {
           inputs[0].nativeElement.checked = true;
           fixture.detectChanges();
 
-          const value = fixture.debugElement.componentInstance.form.value;
+          const value = fixture.componentInstance.form.value;
           expect(value.food).toEqual('chicken');
           expect(inputs[1].nativeElement.checked).toEqual(false);
           expect(inputs[2].nativeElement.checked).toEqual(false);
@@ -841,8 +964,8 @@ export function main() {
           const showRadio = new FormControl('yes');
           const form =
               new FormGroup({'food': new FormControl('fish'), 'drink': new FormControl('sprite')});
-          fixture.debugElement.componentInstance.form = form;
-          fixture.debugElement.componentInstance.showRadio = showRadio;
+          fixture.componentInstance.form = form;
+          fixture.componentInstance.showRadio = showRadio;
           showRadio.valueChanges.subscribe((change) => {
             (change === 'yes') ? form.addControl('food', new FormControl('fish')) :
                                  form.removeControl('food');
@@ -876,7 +999,7 @@ export function main() {
             food: new FormControl('fish'),
             nested: new FormGroup({food: new FormControl('fish')})
           });
-          fixture.debugElement.componentInstance.form = form;
+          fixture.componentInstance.form = form;
           fixture.detectChanges();
 
           // model -> view
@@ -904,8 +1027,8 @@ export function main() {
       describe('custom value accessors', () => {
         it('should support custom value accessors', () => {
           const fixture = TestBed.createComponent(WrappedValueForm);
-          fixture.debugElement.componentInstance.form =
-              new FormGroup({'login': new FormControl('aa')});
+          const form = new FormGroup({'login': new FormControl('aa')});
+          fixture.componentInstance.form = form;
           fixture.detectChanges();
 
           // model -> view
@@ -916,14 +1039,18 @@ export function main() {
           dispatchEvent(input.nativeElement, 'input');
 
           // view -> model
-          expect(fixture.debugElement.componentInstance.form.value).toEqual({'login': 'bb'});
+          expect(form.value).toEqual({'login': 'bb'});
+
+          // custom validator
+          expect(form.get('login').errors).toEqual({'err': true});
+          form.setValue({login: 'expected'});
+          expect(form.get('login').errors).toEqual(null);
         });
 
         it('should support custom value accessors on non builtin input elements that fire a change event without a \'target\' property',
            () => {
              const fixture = TestBed.createComponent(MyInputForm);
-             fixture.debugElement.componentInstance.form =
-                 new FormGroup({'login': new FormControl('aa')});
+             fixture.componentInstance.form = new FormGroup({'login': new FormControl('aa')});
              fixture.detectChanges();
 
              const input = fixture.debugElement.query(By.css('my-input'));
@@ -931,7 +1058,7 @@ export function main() {
 
              input.componentInstance.value = '!bb!';
              input.componentInstance.onInput.subscribe((value: any) => {
-               expect(fixture.debugElement.componentInstance.form.value).toEqual({'login': 'bb'});
+               expect(fixture.componentInstance.form.value).toEqual({'login': 'bb'});
              });
              input.componentInstance.dispatchChangeEvent();
            });
@@ -944,9 +1071,8 @@ export function main() {
 
       it('should support ngModel for complex forms', fakeAsync(() => {
            const fixture = TestBed.createComponent(FormGroupNgModel);
-           fixture.debugElement.componentInstance.form =
-               new FormGroup({'login': new FormControl('')});
-           fixture.debugElement.componentInstance.login = 'oldValue';
+           fixture.componentInstance.form = new FormGroup({'login': new FormControl('')});
+           fixture.componentInstance.login = 'oldValue';
            fixture.detectChanges();
            tick();
 
@@ -957,13 +1083,13 @@ export function main() {
            dispatchEvent(input, 'input');
 
            tick();
-           expect(fixture.debugElement.componentInstance.login).toEqual('updatedValue');
+           expect(fixture.componentInstance.login).toEqual('updatedValue');
          }));
 
       it('should support ngModel for single fields', fakeAsync(() => {
            const fixture = TestBed.createComponent(FormControlNgModel);
-           fixture.debugElement.componentInstance.control = new FormControl('');
-           fixture.debugElement.componentInstance.login = 'oldValue';
+           fixture.componentInstance.control = new FormControl('');
+           fixture.componentInstance.login = 'oldValue';
            fixture.detectChanges();
            tick();
 
@@ -974,12 +1100,12 @@ export function main() {
            dispatchEvent(input, 'input');
            tick();
 
-           expect(fixture.debugElement.componentInstance.login).toEqual('updatedValue');
+           expect(fixture.componentInstance.login).toEqual('updatedValue');
          }));
 
       it('should not update the view when the value initially came from the view', fakeAsync(() => {
            const fixture = TestBed.createComponent(FormControlNgModel);
-           fixture.debugElement.componentInstance.control = new FormControl('');
+           fixture.componentInstance.control = new FormControl('');
            fixture.detectChanges();
            tick();
 
@@ -1006,7 +1132,7 @@ export function main() {
           'max': new FormControl(''),
           'pattern': new FormControl('')
         });
-        fixture.debugElement.componentInstance.form = form;
+        fixture.componentInstance.form = form;
         fixture.detectChanges();
 
         const required = fixture.debugElement.query(By.css('[required]'));
@@ -1051,11 +1177,11 @@ export function main() {
           'max': new FormControl(''),
           'pattern': new FormControl('')
         });
-        fixture.debugElement.componentInstance.form = form;
-        fixture.debugElement.componentInstance.required = true;
-        fixture.debugElement.componentInstance.minLen = 3;
-        fixture.debugElement.componentInstance.maxLen = 3;
-        fixture.debugElement.componentInstance.pattern = '.{3,}';
+        fixture.componentInstance.form = form;
+        fixture.componentInstance.required = true;
+        fixture.componentInstance.minLen = 3;
+        fixture.componentInstance.maxLen = 3;
+        fixture.componentInstance.pattern = '.{3,}';
         fixture.detectChanges();
 
         const required = fixture.debugElement.query(By.css('[name=required]'));
@@ -1099,7 +1225,7 @@ export function main() {
           'max': new FormControl(''),
           'pattern': new FormControl('')
         });
-        fixture.debugElement.componentInstance.form = form;
+        fixture.componentInstance.form = form;
         fixture.detectChanges();
 
         const required = fixture.debugElement.query(By.css('[name=required]'));
@@ -1123,10 +1249,10 @@ export function main() {
         expect(form.hasError('pattern', ['pattern'])).toEqual(false);
         expect(form.valid).toEqual(true);
 
-        fixture.debugElement.componentInstance.required = true;
-        fixture.debugElement.componentInstance.minLen = 3;
-        fixture.debugElement.componentInstance.maxLen = 3;
-        fixture.debugElement.componentInstance.pattern = '.{3,}';
+        fixture.componentInstance.required = true;
+        fixture.componentInstance.minLen = 3;
+        fixture.componentInstance.maxLen = 3;
+        fixture.componentInstance.pattern = '.{3,}';
         fixture.detectChanges();
 
         dispatchEvent(required.nativeElement, 'input');
@@ -1141,17 +1267,17 @@ export function main() {
         expect(form.valid).toEqual(false);
 
         expect(required.nativeElement.getAttribute('required')).toEqual('');
-        expect(fixture.debugElement.componentInstance.minLen.toString())
+        expect(fixture.componentInstance.minLen.toString())
             .toEqual(minLength.nativeElement.getAttribute('minlength'));
-        expect(fixture.debugElement.componentInstance.maxLen.toString())
+        expect(fixture.componentInstance.maxLen.toString())
             .toEqual(maxLength.nativeElement.getAttribute('maxlength'));
-        expect(fixture.debugElement.componentInstance.pattern.toString())
+        expect(fixture.componentInstance.pattern.toString())
             .toEqual(pattern.nativeElement.getAttribute('pattern'));
 
-        fixture.debugElement.componentInstance.required = false;
-        fixture.debugElement.componentInstance.minLen = null;
-        fixture.debugElement.componentInstance.maxLen = null;
-        fixture.debugElement.componentInstance.pattern = null;
+        fixture.componentInstance.required = false;
+        fixture.componentInstance.minLen = null;
+        fixture.componentInstance.maxLen = null;
+        fixture.componentInstance.pattern = null;
         fixture.detectChanges();
 
         expect(form.hasError('required', ['login'])).toEqual(false);
@@ -1174,11 +1300,11 @@ export function main() {
           'max': new FormControl(''),
           'pattern': new FormControl('')
         });
-        fixture.debugElement.componentInstance.form = form;
-        fixture.debugElement.componentInstance.required = true;
-        fixture.debugElement.componentInstance.minLen = 3;
-        fixture.debugElement.componentInstance.maxLen = 3;
-        fixture.debugElement.componentInstance.pattern = '.{3,}';
+        fixture.componentInstance.form = form;
+        fixture.componentInstance.required = true;
+        fixture.componentInstance.minLen = 3;
+        fixture.componentInstance.maxLen = 3;
+        fixture.componentInstance.pattern = '.{3,}';
         fixture.detectChanges();
 
         const newForm = new FormGroup({
@@ -1187,13 +1313,13 @@ export function main() {
           'max': new FormControl(''),
           'pattern': new FormControl('')
         });
-        fixture.debugElement.componentInstance.form = newForm;
+        fixture.componentInstance.form = newForm;
         fixture.detectChanges();
 
-        fixture.debugElement.componentInstance.required = false;
-        fixture.debugElement.componentInstance.minLen = null;
-        fixture.debugElement.componentInstance.maxLen = null;
-        fixture.debugElement.componentInstance.pattern = null;
+        fixture.componentInstance.required = false;
+        fixture.componentInstance.minLen = null;
+        fixture.componentInstance.maxLen = null;
+        fixture.componentInstance.pattern = null;
         fixture.detectChanges();
 
         expect(newForm.hasError('required', ['login'])).toEqual(false);
@@ -1207,7 +1333,7 @@ export function main() {
            const fixture = TestBed.createComponent(UniqLoginWrapper);
            const form = new FormGroup({'login': new FormControl('')});
            tick();
-           fixture.debugElement.componentInstance.form = form;
+           fixture.componentInstance.form = form;
            fixture.detectChanges();
 
            expect(form.pending).toEqual(true);
@@ -1226,7 +1352,7 @@ export function main() {
       it('should use sync validators defined in the model', () => {
         const fixture = TestBed.createComponent(FormGroupComp);
         const form = new FormGroup({'login': new FormControl('aa', Validators.required)});
-        fixture.debugElement.componentInstance.form = form;
+        fixture.componentInstance.form = form;
         fixture.detectChanges();
         expect(form.valid).toEqual(true);
 
@@ -1242,7 +1368,7 @@ export function main() {
            const control =
                new FormControl('', Validators.required, uniqLoginAsyncValidator('expected'));
            const form = new FormGroup({'login': control});
-           fixture.debugElement.componentInstance.form = form;
+           fixture.componentInstance.form = form;
            fixture.detectChanges();
            tick();
 
@@ -1368,8 +1494,7 @@ export function main() {
             template: `
          <div formArrayName="cities">
            <input type="text" formControlName="login">
-         </div>
-        `
+         </div>`
           }
         });
         const fixture = TestBed.createComponent(FormGroupComp);
@@ -1390,7 +1515,7 @@ export function main() {
           }
         });
         const fixture = TestBed.createComponent(FormGroupComp);
-        fixture.debugElement.componentInstance.myGroup = new FormGroup({});
+        fixture.componentInstance.myGroup = new FormGroup({});
 
         expect(() => fixture.detectChanges())
             .toThrowError(new RegExp(
@@ -1408,7 +1533,7 @@ export function main() {
           }
         });
         const fixture = TestBed.createComponent(FormGroupComp);
-        fixture.debugElement.componentInstance.myGroup = new FormGroup({});
+        fixture.componentInstance.myGroup = new FormGroup({});
 
         expect(() => fixture.detectChanges()).not.toThrowError();
       });
@@ -1427,7 +1552,7 @@ export function main() {
         });
         const fixture = TestBed.createComponent(FormGroupComp);
         const myGroup = new FormGroup({person: new FormGroup({})});
-        fixture.debugElement.componentInstance.myGroup = new FormGroup({person: new FormGroup({})});
+        fixture.componentInstance.myGroup = new FormGroup({person: new FormGroup({})});
 
         expect(() => fixture.detectChanges())
             .toThrowError(new RegExp(
@@ -1447,7 +1572,7 @@ export function main() {
           }
         });
         const fixture = TestBed.createComponent(FormGroupComp);
-        fixture.debugElement.componentInstance.myGroup = new FormGroup({});
+        fixture.componentInstance.myGroup = new FormGroup({});
 
         expect(() => fixture.detectChanges())
             .toThrowError(
@@ -1460,13 +1585,11 @@ export function main() {
             template: `
           <form [formGroup]="form">hav
             <input type="radio" formControlName="food" name="drink" value="chicken">
-          </form>
-        `
+          </form>`
           }
         });
         const fixture = TestBed.createComponent(FormGroupComp);
-        fixture.debugElement.componentInstance.form =
-            new FormGroup({'food': new FormControl('fish')});
+        fixture.componentInstance.form = new FormGroup({'food': new FormControl('fish')});
 
         expect(() => fixture.detectChanges())
             .toThrowError(new RegExp('If you define both a name and a formControlName'));
@@ -1478,13 +1601,15 @@ export function main() {
 
 @Directive({
   selector: '[wrapped-value]',
-  host: {'(input)': 'handleOnInput($event.target.value)', '[value]': 'value'}
+  host: {'(input)': 'handleOnInput($event.target.value)', '[value]': 'value'},
+  providers: [
+    {provide: NG_VALUE_ACCESSOR, multi: true, useExisting: WrappedValue},
+    {provide: NG_VALIDATORS, multi: true, useExisting: WrappedValue}
+  ]
 })
 class WrappedValue implements ControlValueAccessor {
   value: any;
   onChange: Function;
-
-  constructor(cd: NgControl) { cd.valueAccessor = this; }
 
   writeValue(value: any) { this.value = `!${value}!`; }
 
@@ -1492,6 +1617,8 @@ class WrappedValue implements ControlValueAccessor {
   registerOnTouched(fn: any) {}
 
   handleOnInput(value: any) { this.onChange(value.substring(1, value.length - 1)); }
+
+  validate(c: AbstractControl) { return c.value === 'expected' ? null : {'err': true}; }
 }
 
 @Component({selector: 'my-input', template: ''})
@@ -1570,7 +1697,9 @@ class FormControlComp {
   `
 })
 class FormGroupComp {
+  control: FormControl;
   form: FormGroup;
+  myGroup: FormGroup;
   data: string;
 }
 

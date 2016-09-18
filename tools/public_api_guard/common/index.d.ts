@@ -109,9 +109,9 @@ export declare class LowerCasePipe implements PipeTransform {
 
 /** @stable */
 export declare class NgClass implements DoCheck {
-    initialClasses: string;
+    klass: string;
     ngClass: string | string[] | Set<string> | {
-        [key: string]: any;
+        [klass: string]: any;
     };
     constructor(_iterableDiffers: IterableDiffers, _keyValueDiffers: KeyValueDiffers, _ngEl: ElementRef, _renderer: Renderer);
     ngDoCheck(): void;
@@ -122,7 +122,7 @@ export declare class NgFor implements DoCheck, OnChanges {
     ngForOf: any;
     ngForTemplate: TemplateRef<NgForRow>;
     ngForTrackBy: TrackByFn;
-    constructor(_viewContainer: ViewContainerRef, _templateRef: TemplateRef<NgForRow>, _iterableDiffers: IterableDiffers, _cdr: ChangeDetectorRef);
+    constructor(_viewContainer: ViewContainerRef, _template: TemplateRef<NgForRow>, _differs: IterableDiffers, _cdr: ChangeDetectorRef);
     ngDoCheck(): void;
     ngOnChanges(changes: SimpleChanges): void;
 }
@@ -130,7 +130,7 @@ export declare class NgFor implements DoCheck, OnChanges {
 /** @stable */
 export declare class NgIf {
     ngIf: any;
-    constructor(_viewContainer: ViewContainerRef, _templateRef: TemplateRef<Object>);
+    constructor(_viewContainer: ViewContainerRef, _template: TemplateRef<Object>);
 }
 
 /** @experimental */
@@ -181,7 +181,7 @@ export declare class NgTemplateOutlet implements OnChanges {
     ngOutletContext: Object;
     ngTemplateOutlet: TemplateRef<Object>;
     constructor(_viewContainerRef: ViewContainerRef);
-    ngOnChanges(): void;
+    ngOnChanges(changes: SimpleChanges): void;
 }
 
 /** @stable */
