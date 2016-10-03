@@ -8,9 +8,7 @@
 
 
 import {CompileIdentifierMetadata} from '../compile_metadata';
-import {StringMapWrapper} from '../facade/collection';
-import {isBlank, isPresent, isString} from '../facade/lang';
-import {ValueTransformer, visitValue} from '../util';
+import {isPresent, isString} from '../facade/lang';
 
 
 
@@ -21,7 +19,7 @@ export enum TypeModifier {
 
 export abstract class Type {
   constructor(public modifiers: TypeModifier[] = null) {
-    if (isBlank(modifiers)) {
+    if (!modifiers) {
       this.modifiers = [];
     }
   }
@@ -464,7 +462,7 @@ export enum StmtModifier {
 
 export abstract class Statement {
   constructor(public modifiers: StmtModifier[] = null) {
-    if (isBlank(modifiers)) {
+    if (!modifiers) {
       this.modifiers = [];
     }
   }
@@ -519,7 +517,7 @@ export class ReturnStatement extends Statement {
 
 export class AbstractClassPart {
   constructor(public type: Type = null, public modifiers: StmtModifier[]) {
-    if (isBlank(modifiers)) {
+    if (!modifiers) {
       this.modifiers = [];
     }
   }

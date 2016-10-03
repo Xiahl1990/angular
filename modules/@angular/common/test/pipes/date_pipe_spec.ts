@@ -8,10 +8,8 @@
 
 import {DatePipe} from '@angular/common';
 import {PipeResolver} from '@angular/compiler/src/pipe_resolver';
-import {afterEach, beforeEach, ddescribe, describe, expect, iit, it, xit} from '@angular/core/testing/testing_internal';
+import {beforeEach, describe, expect, it} from '@angular/core/testing/testing_internal';
 import {browserDetection} from '@angular/platform-browser/testing/browser_util';
-
-import {DateWrapper} from '../../src/facade/lang';
 
 export function main() {
   describe('DatePipe', () => {
@@ -27,7 +25,7 @@ export function main() {
     // Tracking issue: https://github.com/angular/angular/issues/11187
 
     beforeEach(() => {
-      date = DateWrapper.create(2015, 6, 15, 9, 3, 1);
+      date = new Date(2015, 5, 15, 9, 3, 1);
       pipe = new DatePipe('en-US');
     });
 

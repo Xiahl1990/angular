@@ -6,10 +6,10 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {AsyncTestCompleter, afterEach, beforeEach, ddescribe, describe, expect, iit, inject, it, xit} from '@angular/core/testing/testing_internal';
+import {AsyncTestCompleter, describe, expect, inject, it} from '@angular/core/testing/testing_internal';
 
 import {MeasureValues, Metric, Options, ReflectiveInjector, Reporter, Sampler, Validator, WebDriverAdapter} from '../index';
-import {Date, DateWrapper, isBlank, isPresent, stringify} from '../src/facade/lang';
+import {isBlank, isPresent} from '../src/facade/lang';
 
 export function main() {
   var EMPTY_EXECUTE = () => {};
@@ -26,10 +26,10 @@ export function main() {
       execute?: any
     } = {}) {
       var time = 1000;
-      if (isBlank(metric)) {
+      if (!metric) {
         metric = new MockMetric([]);
       }
-      if (isBlank(reporter)) {
+      if (!reporter) {
         reporter = new MockReporter([]);
       }
       if (isBlank(driver)) {
@@ -39,7 +39,7 @@ export function main() {
         Options.DEFAULT_PROVIDERS, Sampler.PROVIDERS, {provide: Metric, useValue: metric},
         {provide: Reporter, useValue: reporter}, {provide: WebDriverAdapter, useValue: driver},
         {provide: Options.EXECUTE, useValue: execute}, {provide: Validator, useValue: validator},
-        {provide: Options.NOW, useValue: () => DateWrapper.fromMillis(time++)}
+        {provide: Options.NOW, useValue: () => new Date(time++)}
       ];
       if (isPresent(prepare)) {
         providers.push({provide: Options.PREPARE, useValue: prepare});
@@ -204,7 +204,7 @@ export function main() {
 }
 
 function mv(runIndex: number, time: number, values: {[key: string]: number}) {
-  return new MeasureValues(runIndex, DateWrapper.fromMillis(time), values);
+  return new MeasureValues(runIndex, new Date(time), values);
 }
 
 function createCountingValidator(

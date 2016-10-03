@@ -7,10 +7,10 @@
  */
 
 import {Provider} from '@angular/core';
-import {AsyncTestCompleter, afterEach, beforeEach, ddescribe, describe, expect, iit, inject, it, xit} from '@angular/core/testing/testing_internal';
+import {describe, expect, it} from '@angular/core/testing/testing_internal';
 
-import {ConsoleReporter, MeasureValues, ReflectiveInjector, Reporter, SampleDescription, SampleState} from '../../index';
-import {Date, DateWrapper, isBlank, isPresent} from '../../src/facade/lang';
+import {ConsoleReporter, MeasureValues, ReflectiveInjector, SampleDescription} from '../../index';
+import {isBlank, isPresent} from '../../src/facade/lang';
 
 export function main() {
   describe('console reporter', () => {
@@ -25,7 +25,7 @@ export function main() {
           metrics?: {[key: string]: any}
         }) {
       log = [];
-      if (isBlank(descriptions)) {
+      if (!descriptions) {
         descriptions = [];
       }
       if (isBlank(sampleId)) {
@@ -90,5 +90,5 @@ export function main() {
 }
 
 function mv(runIndex: number, time: number, values: {[key: string]: number}) {
-  return new MeasureValues(runIndex, DateWrapper.fromMillis(time), values);
+  return new MeasureValues(runIndex, new Date(time), values);
 }

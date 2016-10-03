@@ -9,9 +9,7 @@
 import {CompileIdentifierMetadata} from '@angular/compiler/src/compile_metadata';
 import {JavaScriptEmitter} from '@angular/compiler/src/output/js_emitter';
 import * as o from '@angular/compiler/src/output/output_ast';
-import {beforeEach, ddescribe, describe, expect, iit, inject, it, xit} from '@angular/core/testing/testing_internal';
-
-import {isBlank} from '../../src/facade/lang';
+import {beforeEach, describe, expect, it} from '@angular/core/testing/testing_internal';
 
 import {SimpleJsImportGenerator} from './output_emitter_util';
 
@@ -39,7 +37,7 @@ export function main() {
     });
 
     function emitStmt(stmt: o.Statement, exportedVars: string[] = null): string {
-      if (isBlank(exportedVars)) {
+      if (!exportedVars) {
         exportedVars = [];
       }
       return emitter.emitStatements(someModuleUrl, [stmt], exportedVars);

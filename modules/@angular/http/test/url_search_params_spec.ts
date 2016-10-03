@@ -6,7 +6,7 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {beforeEach, ddescribe, describe, expect, iit, inject, it, xit} from '@angular/core/testing/testing_internal';
+import {describe, expect, it} from '@angular/core/testing/testing_internal';
 import {URLSearchParams} from '../src/url_search_params';
 
 export function main() {
@@ -147,6 +147,24 @@ export function main() {
       expect(paramsC.has('b')).toBe(false);
       expect(paramsC.has('c')).toBe(true);
       expect(paramsC.toString()).toEqual('a=2&q=4%2B&c=8');
+    });
+
+    it('should remove the parameter when set to undefined or null', () => {
+      const params = new URLSearchParams('q=Q');
+      params.set('q', undefined);
+      expect(params.has('q')).toBe(false);
+      expect(params.toString()).toEqual('');
+      params.set('q', null);
+      expect(params.has('q')).toBe(false);
+      expect(params.toString()).toEqual('');
+    });
+
+    it('should ignore the value when append undefined or null', () => {
+      const params = new URLSearchParams('q=Q');
+      params.append('q', undefined);
+      expect(params.toString()).toEqual('q=Q');
+      params.append('q', null);
+      expect(params.toString()).toEqual('q=Q');
     });
 
   });

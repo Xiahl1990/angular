@@ -8,12 +8,11 @@
 
 import {AsyncPipe} from '@angular/common';
 import {WrappedValue} from '@angular/core';
-import {AsyncTestCompleter, afterEach, beforeEach, ddescribe, describe, expect, iit, inject, it, xit} from '@angular/core/testing/testing_internal';
+import {AsyncTestCompleter, beforeEach, describe, expect, inject, it} from '@angular/core/testing/testing_internal';
 import {getDOM} from '@angular/platform-browser/src/dom/dom_adapter';
 import {browserDetection} from '@angular/platform-browser/testing/browser_util';
 
 import {EventEmitter} from '../../src/facade/async';
-import {isBlank} from '../../src/facade/lang';
 import {SpyChangeDetectorRef} from '../spies';
 
 export function main() {
@@ -112,7 +111,7 @@ export function main() {
       var promise: Promise<any>;
       var ref: SpyChangeDetectorRef;
       // adds longer timers for passing tests in IE
-      var timer = (!isBlank(getDOM()) && browserDetection.isIE) ? 50 : 10;
+      var timer = (getDOM() && browserDetection.isIE) ? 50 : 10;
 
       beforeEach(() => {
         promise = new Promise((res, rej) => {

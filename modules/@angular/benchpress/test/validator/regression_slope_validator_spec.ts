@@ -6,11 +6,10 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {AsyncTestCompleter, afterEach, beforeEach, ddescribe, describe, expect, iit, inject, it, xit} from '@angular/core/testing/testing_internal';
+import {describe, expect, it} from '@angular/core/testing/testing_internal';
 
 import {MeasureValues, ReflectiveInjector, RegressionSlopeValidator} from '../../index';
 import {ListWrapper} from '../../src/facade/collection';
-import {Date, DateWrapper} from '../../src/facade/lang';
 
 export function main() {
   describe('regression slope validator', () => {
@@ -62,5 +61,5 @@ export function main() {
 }
 
 function mv(runIndex: number, time: number, values: {[key: string]: number}) {
-  return new MeasureValues(runIndex, DateWrapper.fromMillis(time), values);
+  return new MeasureValues(runIndex, new Date(time), values);
 }

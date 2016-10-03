@@ -6,9 +6,9 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {Location} from '@angular/common';
+
 import {Component, Injectable} from '@angular/core';
-import {DateWrapper, isPresent} from '@angular/core/src/facade/lang';
+import {isPresent} from '@angular/core/src/facade/lang';
 import {ActivatedRoute, Router} from '@angular/router';
 
 import * as db from './data';
@@ -102,10 +102,7 @@ export class InboxCmp {
         if (sortEmailsByDate) {
           this.items.sort(
               (a: InboxRecord, b: InboxRecord) =>
-                  DateWrapper.toMillis(DateWrapper.fromISOString(a.date)) <
-                      DateWrapper.toMillis(DateWrapper.fromISOString(b.date)) ?
-                  -1 :
-                  1);
+                  new Date(a.date).getTime() < new Date(b.date).getTime() ? -1 : 1);
         }
       });
     });

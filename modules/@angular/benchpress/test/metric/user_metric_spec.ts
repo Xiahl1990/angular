@@ -7,11 +7,9 @@
  */
 
 import {Provider, ReflectiveInjector} from '@angular/core';
-import {AsyncTestCompleter, afterEach, beforeEach, ddescribe, describe, expect, iit, inject, it, xit} from '@angular/core/testing/testing_internal';
+import {AsyncTestCompleter, describe, expect, inject, it} from '@angular/core/testing/testing_internal';
 
-import {Injector, Metric, MultiMetric, Options, PerfLogEvent, PerfLogFeatures, PerflogMetric, UserMetric, WebDriverAdapter, WebDriverExtension} from '../../index';
-import {StringMapWrapper} from '../../src/facade/collection';
-import {Json, isBlank, isPresent} from '../../src/facade/lang';
+import {Options, PerfLogEvent, PerfLogFeatures, UserMetric, WebDriverAdapter} from '../../index';
 
 export function main() {
   var wdAdapter: MockDriverAdapter;
@@ -19,11 +17,11 @@ export function main() {
   function createMetric(
       perfLogs: PerfLogEvent[], perfLogFeatures: PerfLogFeatures,
       {userMetrics}: {userMetrics?: {[key: string]: string}} = {}): UserMetric {
-    if (isBlank(perfLogFeatures)) {
+    if (!perfLogFeatures) {
       perfLogFeatures =
           new PerfLogFeatures({render: true, gc: true, frameCapture: true, userTiming: true});
     }
-    if (isBlank(userMetrics)) {
+    if (!userMetrics) {
       userMetrics = {};
     }
     wdAdapter = new MockDriverAdapter();

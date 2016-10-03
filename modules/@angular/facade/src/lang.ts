@@ -59,15 +59,8 @@ export {_global as global};
 
 
 export function getTypeNameForDebugging(type: any): string {
-  if (type['name']) {
-    return type['name'];
-  }
-  return typeof type;
+  return type['name'] || typeof type;
 }
-
-
-export var Math = _global.Math;
-export var Date = _global.Date;
 
 // TODO: remove calls to assert in production environment
 // Note: Can't just export this and import in in other files
@@ -139,24 +132,9 @@ export function stringify(token: any): string {
     return token.name;
   }
 
-  var res = token.toString();
-  var newLineIndex = res.indexOf('\n');
-  return (newLineIndex === -1) ? res : res.substring(0, newLineIndex);
-}
-
-// serialize / deserialize enum exist only for consistency with dart API
-// enums in typescript don't need to be serialized
-
-export function serializeEnum(val: any): number {
-  return val;
-}
-
-export function deserializeEnum(val: any, values: Map<number, any>): any {
-  return val;
-}
-
-export function resolveEnumToken(enumValue: any, val: any): string {
-  return enumValue[val];
+  const res = token.toString();
+  const newLineIndex = res.indexOf('\n');
+  return newLineIndex === -1 ? res : res.substring(0, newLineIndex);
 }
 
 export class StringWrapper {
@@ -321,19 +299,6 @@ export class Json {
     // Dart doesn't take 3 arguments
     return _global.JSON.stringify(data, null, 2);
   }
-}
-
-export class DateWrapper {
-  static create(
-      year: number, month: number = 1, day: number = 1, hour: number = 0, minutes: number = 0,
-      seconds: number = 0, milliseconds: number = 0): Date {
-    return new Date(year, month - 1, day, hour, minutes, seconds, milliseconds);
-  }
-  static fromISOString(str: string): Date { return new Date(str); }
-  static fromMillis(ms: number): Date { return new Date(ms); }
-  static toMillis(date: Date): number { return date.getTime(); }
-  static now(): Date { return new Date(); }
-  static toJson(date: Date): string { return date.toJSON(); }
 }
 
 export function setValueOnPath(global: any, path: string, value: any) {

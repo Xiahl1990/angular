@@ -492,7 +492,7 @@ export abstract class AbstractControl {
   getError(errorCode: string, path: string[] = null): any {
     var control = isPresent(path) && !ListWrapper.isEmpty(path) ? this.get(path) : this;
     if (isPresent(control) && isPresent(control._errors)) {
-      return StringMapWrapper.get(control._errors, errorCode);
+      return control._errors[errorCode];
     } else {
       return null;
     }
@@ -625,6 +625,8 @@ export abstract class AbstractControl {
  *
  * You can also initialize the control with a form state object on instantiation,
  * which includes both the value and whether or not the control is disabled.
+ * You can't use the value key without the disabled key; both are required
+ * to use this way of initialization.
  *
  * ```ts
  * const ctrl = new FormControl({value: 'n/a', disabled: true});
