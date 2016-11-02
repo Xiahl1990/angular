@@ -1,7 +1,13 @@
+/**
+ * @license
+ * Copyright Google Inc. All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
 import {NgFor} from '@angular/common';
 import {Component, Directive} from '@angular/core';
-import {ListWrapper} from '@angular/facade/src/collection';
-import {Math} from '@angular/facade/src/math';
 
 import {HEIGHT, ITEMS, ITEM_HEIGHT, Offering, ROW_WIDTH, VIEW_PORT_HEIGHT, VISIBLE_ITEMS} from './common';
 import {generateOfferings} from './random_data';
@@ -27,7 +33,7 @@ import {ScrollItemComponent} from './scroll_item';
     </div>`
 })
 export class ScrollAreaComponent {
-  _fullList: Offering[];
+  private _fullList: Offering[];
   visibleItems: Offering[];
 
   viewPortHeight: number;
@@ -63,6 +69,6 @@ export class ScrollAreaComponent {
     if (this.paddingDiv != null) {
       this.paddingDiv.style.setProperty('height', `${padding}px`);
     }
-    this.visibleItems = ListWrapper.slice(this._fullList, iStart, iEnd);
+    this.visibleItems = this._fullList.slice(iStart, iEnd);
   }
 }

@@ -11,7 +11,7 @@ import {AnimationAnimateMetadata, AnimationEntryMetadata, AnimationGroupMetadata
 import {assertArrayOfStrings, assertInterpolationSymbols} from './assertions';
 import * as cpl from './compile_metadata';
 import {DirectiveResolver} from './directive_resolver';
-import {isBlank, isPresent, isString, stringify} from './facade/lang';
+import {isBlank, isPresent, stringify} from './facade/lang';
 import {Identifiers, resolveIdentifierToken} from './identifiers';
 import {hasLifecycleHook} from './lifecycle_reflector';
 import {NgModuleResolver} from './ng_module_resolver';
@@ -116,8 +116,7 @@ export class CompileMetadataResolver {
     return null;
   }
 
-  getDirectiveMetadata(directiveType: Type<any>, throwIfNotFound = true):
-      cpl.CompileDirectiveMetadata {
+  getDirectiveMetadata(directiveType: any, throwIfNotFound = true): cpl.CompileDirectiveMetadata {
     directiveType = resolveForwardRef(directiveType);
     let meta = this._directiveCache.get(directiveType);
     if (!meta) {
@@ -161,7 +160,7 @@ export class CompileMetadataResolver {
         moduleUrl = componentModuleUrl(this._reflector, directiveType, dirMeta);
         if (dirMeta.entryComponents) {
           entryComponentMetadata =
-              flattenArray(dirMeta.entryComponents)
+              flattenAndDedupeArray(dirMeta.entryComponents)
                   .map((type) => this.getTypeMetadata(type, staticTypeModuleUrl(type)))
                   .concat(entryComponentMetadata);
         }
@@ -229,7 +228,7 @@ export class CompileMetadataResolver {
       const schemas: SchemaMetadata[] = [];
 
       if (meta.imports) {
-        flattenArray(meta.imports).forEach((importedType) => {
+        flattenAndDedupeArray(meta.imports).forEach((importedType) => {
           let importedModuleType: Type<any>;
           if (isValidType(importedType)) {
             importedModuleType = importedType;
@@ -258,7 +257,7 @@ export class CompileMetadataResolver {
       }
 
       if (meta.exports) {
-        flattenArray(meta.exports).forEach((exportedType) => {
+        flattenAndDedupeArray(meta.exports).forEach((exportedType) => {
           if (!isValidType(exportedType)) {
             throw new Error(
                 `Unexpected value '${stringify(exportedType)}' exported by the module '${stringify(moduleType)}'`);
@@ -284,7 +283,7 @@ export class CompileMetadataResolver {
       const transitiveModule =
           this._getTransitiveNgModuleMetadata(importedModules, exportedModules);
       if (meta.declarations) {
-        flattenArray(meta.declarations).forEach((declaredType) => {
+        flattenAndDedupeArray(meta.declarations).forEach((declaredType) => {
           if (!isValidType(declaredType)) {
             throw new Error(
                 `Unexpected value '${stringify(declaredType)}' declared by the module '${stringify(moduleType)}'`);
@@ -314,12 +313,12 @@ export class CompileMetadataResolver {
 
       if (meta.entryComponents) {
         entryComponents.push(
-            ...flattenArray(meta.entryComponents)
+            ...flattenAndDedupeArray(meta.entryComponents)
                 .map(type => this.getTypeMetadata(type, staticTypeModuleUrl(type))));
       }
 
       if (meta.bootstrap) {
-        const typeMetadata = flattenArray(meta.bootstrap).map(type => {
+        const typeMetadata = flattenAndDedupeArray(meta.bootstrap).map(type => {
           if (!isValidType(type)) {
             throw new Error(
                 `Unexpected value '${stringify(type)}' used in the bootstrap property of module '${stringify(moduleType)}'`);
@@ -332,7 +331,7 @@ export class CompileMetadataResolver {
       entryComponents.push(...bootstrapComponents);
 
       if (meta.schemas) {
-        schemas.push(...flattenArray(meta.schemas));
+        schemas.push(...flattenAndDedupeArray(meta.schemas));
       }
 
       transitiveModule.entryComponents.push(...entryComponents);
@@ -379,15 +378,15 @@ export class CompileMetadataResolver {
   }
 
   private _getTypeDescriptor(type: Type<any>): string {
-    if (this._directiveResolver.resolve(type, false) !== null) {
+    if (this._directiveResolver.resolve(type, false)) {
       return 'directive';
     }
 
-    if (this._pipeResolver.resolve(type, false) !== null) {
+    if (this._pipeResolver.resolve(type, false)) {
       return 'pipe';
     }
 
-    if (this._ngModuleResolver.resolve(type, false) !== null) {
+    if (this._ngModuleResolver.resolve(type, false)) {
       return 'module';
     }
 
@@ -507,9 +506,7 @@ export class CompileMetadataResolver {
       let isSelf = false;
       let isSkipSelf = false;
       let isOptional = false;
-      let query: Query = null;
-      let viewQuery: Query = null;
-      var token: any = null;
+      let token: any = null;
       if (Array.isArray(param)) {
         param.forEach((paramEntry) => {
           if (paramEntry instanceof Host) {
@@ -523,12 +520,6 @@ export class CompileMetadataResolver {
           } else if (paramEntry instanceof Attribute) {
             isAttribute = true;
             token = paramEntry.attributeName;
-          } else if (paramEntry instanceof Query) {
-            if (paramEntry.isViewQuery) {
-              viewQuery = paramEntry;
-            } else {
-              query = paramEntry;
-            }
           } else if (paramEntry instanceof Inject) {
             token = paramEntry.token;
           } else if (isValidType(paramEntry) && isBlank(token)) {
@@ -549,8 +540,6 @@ export class CompileMetadataResolver {
         isSelf,
         isSkipSelf,
         isOptional,
-        query: query ? this.getQueryMetadata(query, null, typeOrFunc) : null,
-        viewQuery: viewQuery ? this.getQueryMetadata(viewQuery, null, typeOrFunc) : null,
         token: this.getTokenMetadata(token)
       });
 
@@ -569,7 +558,7 @@ export class CompileMetadataResolver {
   getTokenMetadata(token: any): cpl.CompileTokenMetadata {
     token = resolveForwardRef(token);
     let compileToken: cpl.CompileTokenMetadata;
-    if (isString(token)) {
+    if (typeof token === 'string') {
       compileToken = new cpl.CompileTokenMetadata({value: token});
     } else {
       compileToken = new cpl.CompileTokenMetadata({
@@ -606,19 +595,20 @@ export class CompileMetadataResolver {
       } else if (isValidType(provider)) {
         compileProvider = this.getTypeMetadata(provider, staticTypeModuleUrl(provider));
       } else {
-        let providersInfo = (<string[]>providers.reduce(
-                                 (soFar: string[], seenProvider: any, seenProviderIdx: number) => {
-                                   if (seenProviderIdx < providerIdx) {
-                                     soFar.push(`${stringify(seenProvider)}`);
-                                   } else if (seenProviderIdx == providerIdx) {
-                                     soFar.push(`?${stringify(seenProvider)}?`);
-                                   } else if (seenProviderIdx == providerIdx + 1) {
-                                     soFar.push('...');
-                                   }
-                                   return soFar;
-                                 },
-                                 []))
-                                .join(', ');
+        const providersInfo =
+            (<string[]>providers.reduce(
+                 (soFar: string[], seenProvider: any, seenProviderIdx: number) => {
+                   if (seenProviderIdx < providerIdx) {
+                     soFar.push(`${stringify(seenProvider)}`);
+                   } else if (seenProviderIdx == providerIdx) {
+                     soFar.push(`?${stringify(seenProvider)}?`);
+                   } else if (seenProviderIdx == providerIdx + 1) {
+                     soFar.push('...');
+                   }
+                   return soFar;
+                 },
+                 []))
+                .join(', ');
 
         throw new Error(
             `Invalid ${debugInfo ? debugInfo : 'provider'} - only instances of Provider and Type are allowed, got: [${providersInfo}]`);
@@ -736,7 +726,6 @@ function getTransitiveModules(
   return targetModules;
 }
 
-
 function flattenArray(tree: any[], out: Array<any> = []): Array<any> {
   if (tree) {
     for (let i = 0; i < tree.length; i++) {
@@ -749,6 +738,17 @@ function flattenArray(tree: any[], out: Array<any> = []): Array<any> {
     }
   }
   return out;
+}
+
+function dedupeArray(array: any[]): Array<any> {
+  if (array) {
+    return Array.from(new Set(array));
+  }
+  return [];
+}
+
+function flattenAndDedupeArray(tree: any[]): Array<any> {
+  return dedupeArray(flattenArray(tree));
 }
 
 function isValidType(value: any): boolean {

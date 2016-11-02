@@ -8,8 +8,8 @@
 
 import {NgZone} from '@angular/core';
 
-import {ListWrapper} from './facade/collection';
-import {StringWrapper, global, isPresent, isString} from './facade/lang';
+import {MapWrapper} from './facade/collection';
+import {global, isPresent} from './facade/lang';
 import {getDOM} from './private_import_platform-browser';
 
 export class BrowserDetection {
@@ -18,7 +18,7 @@ export class BrowserDetection {
     if (isPresent(this._overrideUa)) {
       return this._overrideUa;
     } else {
-      return isPresent(getDOM()) ? getDOM().getUserAgent() : '';
+      return getDOM() ? getDOM().getUserAgent() : '';
     }
   }
 
@@ -83,16 +83,12 @@ export function el(html: string): HTMLElement {
 }
 
 export function normalizeCSS(css: string): string {
-  css = StringWrapper.replaceAll(css, /\s+/g, ' ');
-  css = StringWrapper.replaceAll(css, /:\s/g, ':');
-  css = StringWrapper.replaceAll(css, /'/g, '"');
-  css = StringWrapper.replaceAll(css, / }/g, '}');
-  css = StringWrapper.replaceAllMapped(
-      css, /url\((\"|\s)(.+)(\"|\s)\)(\s*)/g,
-      (match: any /** TODO #9100 */) => `url("${match[2]}")`);
-  css = StringWrapper.replaceAllMapped(
-      css, /\[(.+)=([^"\]]+)\]/g, (match: any /** TODO #9100 */) => `[${match[1]}="${match[2]}"]`);
-  return css;
+  return css.replace(/\s+/g, ' ')
+      .replace(/:\s/g, ':')
+      .replace(/'/g, '"')
+      .replace(/ }/g, '}')
+      .replace(/url\((\"|\s)(.+)(\"|\s)\)(\s*)/g, (...match: string[]) => `url("${match[2]}")`)
+      .replace(/\[(.+)=([^"\]]+)\]/g, (...match: string[]) => `[${match[1]}="${match[2]}"]`);
 }
 
 var _singleTagWhitelist = ['br', 'hr', 'input'];
@@ -106,13 +102,11 @@ export function stringifyElement(el: any /** TODO #9100 */): string {
 
     // Attributes in an ordered way
     var attributeMap = getDOM().attributeMap(el);
-    var keys: any[] /** TODO #9100 */ = [];
-    attributeMap.forEach((v, k) => keys.push(k));
-    ListWrapper.sort(keys);
+    var keys: string[] = MapWrapper.keys(attributeMap).sort();
     for (let i = 0; i < keys.length; i++) {
       var key = keys[i];
       var attValue = attributeMap.get(key);
-      if (!isString(attValue)) {
+      if (typeof attValue !== 'string') {
         result += ` ${key}`;
       } else {
         result += ` ${key}="${attValue}"`;
@@ -128,7 +122,7 @@ export function stringifyElement(el: any /** TODO #9100 */): string {
     }
 
     // Closing tag
-    if (!ListWrapper.contains(_singleTagWhitelist, tagName)) {
+    if (_singleTagWhitelist.indexOf(tagName) == -1) {
       result += `</${tagName}>`;
     }
   } else if (getDOM().isCommentNode(el)) {

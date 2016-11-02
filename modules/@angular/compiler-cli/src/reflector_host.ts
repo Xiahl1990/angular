@@ -6,12 +6,12 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
+import {AssetUrl, ImportGenerator} from '@angular/compiler';
 import {AngularCompilerOptions, MetadataCollector, ModuleMetadata} from '@angular/tsc-wrapped';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as ts from 'typescript';
 
-import {AssetUrl, ImportGenerator} from './private_import_compiler';
 import {StaticReflectorHost, StaticSymbol} from './static_reflector';
 
 const EXT = /(\.ts|\.d\.ts|\.js|\.jsx|\.tsx)$/;
@@ -250,6 +250,12 @@ export class ReflectorHost implements StaticReflectorHost, ImportGenerator {
     } else {
       const sf = this.program.getSourceFile(filePath);
       if (!sf) {
+        if (this.context.fileExists(filePath)) {
+          const sourceText = this.context.readFile(filePath);
+          return this.metadataCollector.getMetadata(
+              ts.createSourceFile(filePath, sourceText, ts.ScriptTarget.Latest, true));
+        }
+
         throw new Error(`Source file ${filePath} not present in program.`);
       }
       return this.metadataCollector.getMetadata(sf);

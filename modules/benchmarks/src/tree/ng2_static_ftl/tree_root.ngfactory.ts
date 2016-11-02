@@ -27,6 +27,7 @@ class _View_TreeRootComponent_Host0 extends import1.AppView<any> {
   _el_0: any;
   /*private*/ _appEl_0: import2.AppElement;
   _TreeRootComponent_0_4: import3.TreeRootComponent;
+  _TreeRootComponent_0_4_View: any;
   constructor(
       viewUtils: import4.ViewUtils, parentInjector: import5.Injector,
       declarationEl: import2.AppElement) {
@@ -35,16 +36,21 @@ class _View_TreeRootComponent_Host0 extends import1.AppView<any> {
         viewUtils, parentInjector, declarationEl, import7.ChangeDetectorStatus.CheckAlways);
   }
   createInternal(rootSelector: string): import2.AppElement {
-    this._el_0 = this.selectOrCreateHostElement('tree', rootSelector, (null as any));
+    this._el_0 = import4.selectOrCreateRenderHostElement(
+        this.renderer, 'tree', import4.EMPTY_INLINE_ARRAY, rootSelector, (null as any));
     this._appEl_0 = new import2.AppElement(0, (null as any), this, this._el_0);
-    var compView_0: any =
+    this._TreeRootComponent_0_4_View =
         viewFactory_TreeRootComponent0(this.viewUtils, this.injector(0), this._appEl_0);
     this._TreeRootComponent_0_4 = new import3.TreeRootComponent();
-    this._appEl_0.initComponent(this._TreeRootComponent_0_4, [], compView_0);
-    compView_0.create(this._TreeRootComponent_0_4, this.projectableNodes, (null as any));
-    this.init([].concat([this._el_0]), [this._el_0], [], []);
+    this._appEl_0.initComponent(this._TreeRootComponent_0_4, this._TreeRootComponent_0_4_View);
+    this._TreeRootComponent_0_4_View.create(this._TreeRootComponent_0_4, (null as any));
+    this.init([].concat([this._el_0]), [this._el_0], []);
     return this._appEl_0;
   }
+  detectChangesInternal(throwOnChange: boolean): void {
+    this._TreeRootComponent_0_4_View.detectChangesInternal(throwOnChange);
+  }
+  destroyInternal(): void { this._TreeRootComponent_0_4_View.destroyInternal(); }
   injectorGetInternal(token: any, requestNodeIndex: number, notFoundResult: any): any {
     if (((token === import3.TreeRootComponent) && (0 === requestNodeIndex))) {
       return this._TreeRootComponent_0_4;
@@ -88,7 +94,7 @@ class _View_TreeRootComponent0 extends import1.AppView<import3.TreeRootComponent
         new import11.TemplateRef_(this._appEl_0, viewFactory_TreeRootComponent1);
     this._NgIf_0_6 = new import10.NgIf(this._appEl_0.vcRef, this._TemplateRef_0_5);
     this._expr_0 = import7.UNINITIALIZED;
-    this.init([], [this._anchor_0], [], []);
+    this.init([], [this._anchor_0], []);
     return (null as any);
   }
   injectorGetInternal(token: any, requestNodeIndex: number, notFoundResult: any): any {
@@ -106,8 +112,7 @@ class _View_TreeRootComponent0 extends import1.AppView<import3.TreeRootComponent
       this._NgIf_0_6.ngIf = currVal_0;
       this._expr_0 = currVal_0;
     }
-    this.detectContentChildrenChanges(throwOnChange);
-    this.detectViewChildrenChanges(throwOnChange);
+    this._appEl_0.detectChangesInNestedViews(throwOnChange);
   }
 }
 export function viewFactory_TreeRootComponent0(
@@ -133,15 +138,15 @@ class _View_TreeRootComponent1 extends import1.AppView<any> {
   createInternal(rootSelector: string): import2.AppElement {
     this._el_0 = this.renderer.createElement((null as any), 'tree0', (null as any));
     this._TreeComponent0_0_4View = new import13.View_TreeTreeComponent(maxDepth - 1, this._el_0);
-    this.init([].concat([this._el_0]), [this._el_0], [], []);
+    this.init([].concat([this._el_0]), [this._el_0], []);
     return (null as any);
   }
   destroyInternal() { this._TreeComponent0_0_4View.destroyInternal(); }
   detectChangesInternal(throwOnChange: boolean): void {
     this._TreeComponent0_0_4View.updateData(this.parent.context.data);
-    this.detectContentChildrenChanges(throwOnChange);
     this._TreeComponent0_0_4View.detectChangesInternal(throwOnChange);
   }
+  visitRootNodesInternal(cb: any, context: any) { cb(this._el_0, context); }
 }
 function viewFactory_TreeRootComponent1(
     viewUtils: import4.ViewUtils, parentInjector: import5.Injector,

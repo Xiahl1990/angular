@@ -8,7 +8,6 @@
 
 import {StaticReflector, StaticReflectorHost, StaticSymbol} from '@angular/compiler-cli/src/static_reflector';
 import {HostListener, animate, group, keyframes, sequence, state, style, transition, trigger} from '@angular/core';
-import {ListWrapper} from '@angular/facade/src/collection';
 import {MetadataCollector} from '@angular/tsc-wrapped';
 import * as ts from 'typescript';
 
@@ -117,6 +116,11 @@ describe('StaticReflector', () => {
     expect(simplify(noContext, 1)).toBe(1);
     expect(simplify(noContext, true)).toBe(true);
     expect(simplify(noContext, 'some value')).toBe('some value');
+  });
+
+  it('should simplify a static symbol into itself', () => {
+    const staticSymbol = new StaticSymbol('', '');
+    expect(simplify(noContext, staticSymbol)).toBe(staticSymbol);
   });
 
   it('should simplify an array into a copy of the array', () => {
@@ -450,6 +454,9 @@ class MockReflectorHost implements StaticReflectorHost {
       provider: 'angular2/src/core/di/provider'
     };
   }
+
+  getCanonicalFileName(fileName: string): string { return fileName; }
+
   getStaticSymbol(declarationFile: string, name: string, members?: string[]): StaticSymbol {
     var cacheKey = `${declarationFile}:${name}${members?'.'+members.join('.'):''}`;
     var result = this.staticTypeCache.get(cacheKey);
@@ -466,7 +473,7 @@ class MockReflectorHost implements StaticReflectorHost {
 
     function resolvePath(pathParts: string[]): string {
       let result: string[] = [];
-      ListWrapper.forEachWithIndex(pathParts, (part, index) => {
+      pathParts.forEach((part, index) => {
         switch (part) {
           case '':
           case '.':

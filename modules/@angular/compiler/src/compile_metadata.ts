@@ -9,7 +9,7 @@
 import {ChangeDetectionStrategy, SchemaMetadata, Type, ViewEncapsulation} from '@angular/core';
 
 import {ListWrapper, MapWrapper} from './facade/collection';
-import {isPresent, isStringMap, normalizeBlank, normalizeBool} from './facade/lang';
+import {isPresent} from './facade/lang';
 import {LifecycleHooks} from './private_import_core';
 import {CssSelector} from './selector';
 import {sanitizeIdentifier, splitAtColon} from './util';
@@ -23,7 +23,6 @@ function unimplemented(): any {
 // group 2: "event" from "(event)"
 // group 3: "@trigger" from "@trigger"
 const HOST_REG_EXP = /^(?:(?:\[([^\]]+)\])|(?:\(([^\)]+)\)))|(\@[-\w]+)$/;
-const UNDEFINED = new Object();
 
 export abstract class CompileMetadataWithIdentifier {
   get identifier(): CompileIdentifierMetadata { return <CompileIdentifierMetadata>unimplemented(); }
@@ -106,33 +105,27 @@ export class CompileDiDependencyMetadata {
   isSkipSelf: boolean;
   isOptional: boolean;
   isValue: boolean;
-  query: CompileQueryMetadata;
-  viewQuery: CompileQueryMetadata;
   token: CompileTokenMetadata;
   value: any;
 
-  constructor(
-      {isAttribute, isSelf, isHost, isSkipSelf, isOptional, isValue, query, viewQuery, token,
-       value}: {
-        isAttribute?: boolean,
-        isSelf?: boolean,
-        isHost?: boolean,
-        isSkipSelf?: boolean,
-        isOptional?: boolean,
-        isValue?: boolean,
-        query?: CompileQueryMetadata,
-        viewQuery?: CompileQueryMetadata,
-        token?: CompileTokenMetadata,
-        value?: any
-      } = {}) {
-    this.isAttribute = normalizeBool(isAttribute);
-    this.isSelf = normalizeBool(isSelf);
-    this.isHost = normalizeBool(isHost);
-    this.isSkipSelf = normalizeBool(isSkipSelf);
-    this.isOptional = normalizeBool(isOptional);
-    this.isValue = normalizeBool(isValue);
-    this.query = query;
-    this.viewQuery = viewQuery;
+  constructor({isAttribute, isSelf, isHost, isSkipSelf, isOptional, isValue, token, value}: {
+    isAttribute?: boolean,
+    isSelf?: boolean,
+    isHost?: boolean,
+    isSkipSelf?: boolean,
+    isOptional?: boolean,
+    isValue?: boolean,
+    query?: CompileQueryMetadata,
+    viewQuery?: CompileQueryMetadata,
+    token?: CompileTokenMetadata,
+    value?: any
+  } = {}) {
+    this.isAttribute = !!isAttribute;
+    this.isSelf = !!isSelf;
+    this.isHost = !!isHost;
+    this.isSkipSelf = !!isSkipSelf;
+    this.isOptional = !!isOptional;
+    this.isValue = !!isValue;
     this.token = token;
     this.value = value;
   }
@@ -161,8 +154,8 @@ export class CompileProviderMetadata {
     this.useValue = useValue;
     this.useExisting = useExisting;
     this.useFactory = useFactory;
-    this.deps = normalizeBlank(deps);
-    this.multi = normalizeBool(multi);
+    this.deps = deps || null;
+    this.multi = !!multi;
   }
 }
 
@@ -192,7 +185,7 @@ export class CompileTokenMetadata implements CompileMetadataWithIdentifier {
           {value?: any, identifier?: CompileIdentifierMetadata, identifierIsInstance?: boolean}) {
     this.value = value;
     this.identifier = identifier;
-    this.identifierIsInstance = normalizeBool(identifierIsInstance);
+    this.identifierIsInstance = !!identifierIsInstance;
   }
 
   get reference(): any {
@@ -227,7 +220,7 @@ export class CompileTypeMetadata extends CompileIdentifierMetadata {
     lifecycleHooks?: LifecycleHooks[];
   } = {}) {
     super({reference: reference, name: name, moduleUrl: moduleUrl, prefix: prefix, value: value});
-    this.isHost = normalizeBool(isHost);
+    this.isHost = !!isHost;
     this.diDeps = _normalizeArray(diDeps);
     this.lifecycleHooks = _normalizeArray(lifecycleHooks);
   }
@@ -248,8 +241,8 @@ export class CompileQueryMetadata {
     read?: CompileTokenMetadata
   } = {}) {
     this.selectors = selectors;
-    this.descendants = normalizeBool(descendants);
-    this.first = normalizeBool(first);
+    this.descendants = !!descendants;
+    this.first = !!first;
     this.propertyName = propertyName;
     this.read = read;
   }
@@ -303,9 +296,9 @@ export class CompileTemplateMetadata {
     this.styles = _normalizeArray(styles);
     this.styleUrls = _normalizeArray(styleUrls);
     this.externalStylesheets = _normalizeArray(externalStylesheets);
-    this.animations = isPresent(animations) ? ListWrapper.flatten(animations) : [];
-    this.ngContentSelectors = isPresent(ngContentSelectors) ? ngContentSelectors : [];
-    if (isPresent(interpolation) && interpolation.length != 2) {
+    this.animations = animations ? ListWrapper.flatten(animations) : [];
+    this.ngContentSelectors = ngContentSelectors || [];
+    if (interpolation && interpolation.length != 2) {
       throw new Error(`'interpolation' should have a start and an end symbol.`);
     }
     this.interpolation = interpolation;
@@ -375,7 +368,7 @@ export class CompileDirectiveMetadata implements CompileMetadataWithIdentifier {
 
     return new CompileDirectiveMetadata({
       type,
-      isComponent: normalizeBool(isComponent), selector, exportAs, changeDetection,
+      isComponent: !!isComponent, selector, exportAs, changeDetection,
       inputs: inputsMap,
       outputs: outputsMap,
       hostListeners,
@@ -503,13 +496,13 @@ export class CompilePipeMetadata implements CompileMetadataWithIdentifier {
   } = {}) {
     this.type = type;
     this.name = name;
-    this.pure = normalizeBool(pure);
+    this.pure = !!pure;
   }
   get identifier(): CompileIdentifierMetadata { return this.type; }
 }
 
 /**
- * Metadata regarding compilation of a directive.
+ * Metadata regarding compilation of a module.
  */
 export class CompileNgModuleMetadata implements CompileMetadataWithIdentifier {
   type: CompileTypeMetadata;
@@ -569,6 +562,7 @@ export class CompileNgModuleMetadata implements CompileMetadataWithIdentifier {
 export class TransitiveCompileNgModuleMetadata {
   directivesSet = new Set<Type<any>>();
   pipesSet = new Set<Type<any>>();
+
   constructor(
       public modules: CompileNgModuleMetadata[], public providers: CompileProviderMetadata[],
       public entryComponents: CompileTypeMetadata[], public directives: CompileDirectiveMetadata[],
@@ -581,20 +575,22 @@ export class TransitiveCompileNgModuleMetadata {
 export function removeIdentifierDuplicates<T extends CompileMetadataWithIdentifier>(items: T[]):
     T[] {
   const map = new Map<any, T>();
+
   items.forEach((item) => {
     if (!map.get(item.identifier.reference)) {
       map.set(item.identifier.reference, item);
     }
   });
+
   return MapWrapper.values(map);
 }
 
 function _normalizeArray(obj: any[]): any[] {
-  return isPresent(obj) ? obj : [];
+  return obj || [];
 }
 
 export function isStaticSymbol(value: any): value is StaticSymbol {
-  return isStringMap(value) && isPresent(value['name']) && isPresent(value['filePath']);
+  return typeof value === 'object' && value !== null && value['name'] && value['filePath'];
 }
 
 export interface StaticSymbol {

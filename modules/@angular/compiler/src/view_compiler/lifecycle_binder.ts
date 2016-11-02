@@ -7,39 +7,17 @@
  */
 
 import {CompileDirectiveMetadata, CompilePipeMetadata} from '../compile_metadata';
+import {DirectiveWrapperExpressions} from '../directive_wrapper_compiler';
 import * as o from '../output/output_ast';
 import {LifecycleHooks} from '../private_import_core';
-import {DirectiveAst, ProviderAst} from '../template_parser/template_ast';
+import {DirectiveAst, ProviderAst, ProviderAstType} from '../template_parser/template_ast';
 
 import {CompileElement} from './compile_element';
 import {CompileView} from './compile_view';
 import {DetectChangesVars} from './constants';
 
-
-
 var STATE_IS_NEVER_CHECKED = o.THIS_EXPR.prop('numberOfChecks').identical(new o.LiteralExpr(0));
 var NOT_THROW_ON_CHANGES = o.not(DetectChangesVars.throwOnChange);
-
-export function bindDirectiveDetectChangesLifecycleCallbacks(
-    directiveAst: DirectiveAst, directiveInstance: o.Expression, compileElement: CompileElement) {
-  var view = compileElement.view;
-  var detectChangesInInputsMethod = view.detectChangesInInputsMethod;
-  var lifecycleHooks = directiveAst.directive.type.lifecycleHooks;
-  if (lifecycleHooks.indexOf(LifecycleHooks.OnChanges) !== -1 && directiveAst.inputs.length > 0) {
-    detectChangesInInputsMethod.addStmt(new o.IfStmt(
-        DetectChangesVars.changes.notIdentical(o.NULL_EXPR),
-        [directiveInstance.callMethod('ngOnChanges', [DetectChangesVars.changes]).toStmt()]));
-  }
-  if (lifecycleHooks.indexOf(LifecycleHooks.OnInit) !== -1) {
-    detectChangesInInputsMethod.addStmt(new o.IfStmt(
-        STATE_IS_NEVER_CHECKED.and(NOT_THROW_ON_CHANGES),
-        [directiveInstance.callMethod('ngOnInit', []).toStmt()]));
-  }
-  if (lifecycleHooks.indexOf(LifecycleHooks.DoCheck) !== -1) {
-    detectChangesInInputsMethod.addStmt(new o.IfStmt(
-        NOT_THROW_ON_CHANGES, [directiveInstance.callMethod('ngDoCheck', []).toStmt()]));
-  }
-}
 
 export function bindDirectiveAfterContentLifecycleCallbacks(
     directiveMeta: CompileDirectiveMetadata, directiveInstance: o.Expression,
@@ -77,11 +55,24 @@ export function bindDirectiveAfterViewLifecycleCallbacks(
   }
 }
 
+export function bindDirectiveWrapperLifecycleCallbacks(
+    dir: DirectiveAst, directiveWrapperIntance: o.Expression, compileElement: CompileElement) {
+  compileElement.view.destroyMethod.addStmts(
+      DirectiveWrapperExpressions.ngOnDestroy(dir.directive, directiveWrapperIntance));
+  compileElement.view.detachMethod.addStmts(DirectiveWrapperExpressions.ngOnDetach(
+      dir.hostProperties, directiveWrapperIntance, o.THIS_EXPR,
+      compileElement.component ? compileElement.appElement.prop('componentView') : o.THIS_EXPR,
+      compileElement.renderNode));
+}
+
+
 export function bindInjectableDestroyLifecycleCallbacks(
     provider: ProviderAst, providerInstance: o.Expression, compileElement: CompileElement) {
   var onDestroyMethod = compileElement.view.destroyMethod;
   onDestroyMethod.resetDebugInfo(compileElement.nodeIndex, compileElement.sourceAst);
-  if (provider.lifecycleHooks.indexOf(LifecycleHooks.OnDestroy) !== -1) {
+  if (provider.providerType !== ProviderAstType.Directive &&
+      provider.providerType !== ProviderAstType.Component &&
+      provider.lifecycleHooks.indexOf(LifecycleHooks.OnDestroy) !== -1) {
     onDestroyMethod.addStmt(providerInstance.callMethod('ngOnDestroy', []).toStmt());
   }
 }

@@ -1,5 +1,11 @@
-import {ListWrapper, Map, MapWrapper} from '@angular/facade/src/collection';
-import {StringWrapper} from '@angular/facade/src/lang';
+/**
+ * @license
+ * Copyright Google Inc. All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
 import {Math} from '@angular/facade/src/math';
 
 export var ITEMS = 1000;
@@ -54,7 +60,7 @@ export class CustomDate {
 }
 
 export class RawEntity {
-  _data: Map<any, any>;
+  private _data: Map<any, any>;
 
   constructor() { this._data = new Map(); }
 
@@ -63,7 +69,7 @@ export class RawEntity {
       return this._data[key];
     }
     var pieces = key.split('.');
-    var last = ListWrapper.last(pieces);
+    var last = pieces[pieces.length - 1];
     pieces.length = pieces.length - 1;
     var target = this._resolve(pieces, this);
     if (target == null) {
@@ -78,7 +84,7 @@ export class RawEntity {
       return;
     }
     var pieces = key.split('.');
-    var last = ListWrapper.last(pieces);
+    var last = pieces[pieces.length - 1];
     pieces.length = pieces.length - 1;
     var target = this._resolve(pieces, this);
     target[last] = value;
@@ -89,13 +95,13 @@ export class RawEntity {
       return this._data.delete(key);
     }
     var pieces = key.split('.');
-    var last = ListWrapper.last(pieces);
+    var last = pieces[pieces.length - 1];
     pieces.length = pieces.length - 1;
     var target = this._resolve(pieces, this);
     return target.remove(last);
   }
 
-  _resolve(pieces, start) {
+  private _resolve(pieces, start) {
     var cur = start;
     for (var i = 0; i < pieces.length; i++) {
       cur = cur[pieces[i]];

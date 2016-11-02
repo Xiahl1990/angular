@@ -11,17 +11,16 @@
  * Intended to be used in a build step.
  */
 import * as compiler from '@angular/compiler';
-import {Component, NgModule, ViewEncapsulation} from '@angular/core';
+import {ViewEncapsulation} from '@angular/core';
 import {AngularCompilerOptions, NgcCliOptions} from '@angular/tsc-wrapped';
 import * as path from 'path';
 import * as ts from 'typescript';
 
 import {PathMappedReflectorHost} from './path_mapped_reflector_host';
-import {CompileMetadataResolver, DirectiveNormalizer, DomElementSchemaRegistry, HtmlParser, Lexer, NgModuleCompiler, Parser, StyleCompiler, TemplateParser, TypeScriptEmitter, ViewCompiler} from './private_import_compiler';
 import {Console} from './private_import_core';
 import {ReflectorHost, ReflectorHostContext} from './reflector_host';
 import {StaticAndDynamicReflectionCapabilities} from './static_reflection_capabilities';
-import {StaticReflector, StaticSymbol} from './static_reflector';
+import {StaticReflector, StaticReflectorHost, StaticSymbol} from './static_reflector';
 
 const nodeFs = require('fs');
 
@@ -40,42 +39,12 @@ export class CodeGenerator {
   constructor(
       private options: AngularCompilerOptions, private program: ts.Program,
       public host: ts.CompilerHost, private staticReflector: StaticReflector,
-      private compiler: compiler.OfflineCompiler, private reflectorHost: ReflectorHost) {}
-
-  private readFileMetadata(absSourcePath: string): FileMetadata {
-    const moduleMetadata = this.staticReflector.getModuleMetadata(absSourcePath);
-    const result: FileMetadata = {components: [], ngModules: [], fileUrl: absSourcePath};
-    if (!moduleMetadata) {
-      console.log(`WARNING: no metadata found for ${absSourcePath}`);
-      return result;
-    }
-    const metadata = moduleMetadata['metadata'];
-    const symbols = metadata && Object.keys(metadata);
-    if (!symbols || !symbols.length) {
-      return result;
-    }
-    for (const symbol of symbols) {
-      if (metadata[symbol] && metadata[symbol].__symbolic == 'error') {
-        // Ignore symbols that are only included to record error information.
-        continue;
-      }
-      const staticType = this.reflectorHost.findDeclaration(absSourcePath, symbol, absSourcePath);
-      const annotations = this.staticReflector.annotations(staticType);
-      annotations.forEach((annotation) => {
-        if (annotation instanceof NgModule) {
-          result.ngModules.push(staticType);
-        } else if (annotation instanceof Component) {
-          result.components.push(staticType);
-        }
-      });
-    }
-    return result;
-  }
+      private compiler: compiler.OfflineCompiler, private reflectorHost: StaticReflectorHost) {}
 
   // Write codegen in a directory structure matching the sources.
   private calculateEmitPath(filePath: string): string {
     let root = this.options.basePath;
-    for (let eachRootDir of this.options.rootDirs || []) {
+    for (const eachRootDir of this.options.rootDirs || []) {
       if (this.options.trace) {
         console.log(`Check if ${filePath} is under rootDirs element ${eachRootDir}`);
       }
@@ -85,42 +54,28 @@ export class CodeGenerator {
     }
 
     // transplant the codegen path to be inside the `genDir`
-    var relativePath: string = path.relative(root, filePath);
+    let relativePath: string = path.relative(root, filePath);
     while (relativePath.startsWith('..' + path.sep)) {
       // Strip out any `..` path such as: `../node_modules/@foo` as we want to put everything
       // into `genDir`.
       relativePath = relativePath.substr(3);
     }
+
     return path.join(this.options.genDir, relativePath);
   }
 
-  codegen(): Promise<any> {
-    // Compare with false since the default should be true
-    const skipFileNames = (this.options.generateCodeForLibraries === false) ?
-        GENERATED_OR_DTS_FILES :
-        GENERATED_FILES;
-    let filePaths = this.program.getSourceFiles()
-                        .filter(sf => !skipFileNames.test(sf.fileName))
-                        .map(sf => this.reflectorHost.getCanonicalFileName(sf.fileName));
-    const fileMetas = filePaths.map((filePath) => this.readFileMetadata(filePath));
-    const ngModules = fileMetas.reduce((ngModules, fileMeta) => {
-      ngModules.push(...fileMeta.ngModules);
-      return ngModules;
-    }, <StaticSymbol[]>[]);
-    const analyzedNgModules = this.compiler.analyzeModules(ngModules);
-    return Promise.all(fileMetas.map(
-        (fileMeta) =>
-            this.compiler
-                .compile(
-                    fileMeta.fileUrl, analyzedNgModules, fileMeta.components, fileMeta.ngModules)
-                .then((generatedModules) => {
-                  generatedModules.forEach((generatedModule) => {
-                    const sourceFile = this.program.getSourceFile(fileMeta.fileUrl);
-                    const emitPath = this.calculateEmitPath(generatedModule.moduleUrl);
-                    this.host.writeFile(
-                        emitPath, PREAMBLE + generatedModule.source, false, () => {}, [sourceFile]);
-                  });
-                })));
+  codegen(options: {transitiveModules: boolean}): Promise<any> {
+    const staticSymbols =
+        extractProgramSymbols(this.program, this.staticReflector, this.reflectorHost, this.options);
+
+    return this.compiler.compileModules(staticSymbols, options).then(generatedModules => {
+      generatedModules.forEach(generatedModule => {
+        const sourceFile = this.program.getSourceFile(generatedModule.fileUrl);
+        const emitPath = this.calculateEmitPath(generatedModule.moduleUrl);
+        this.host.writeFile(
+            emitPath, PREAMBLE + generatedModule.source, false, () => {}, [sourceFile]);
+      });
+    });
   }
 
   static create(
@@ -157,36 +112,72 @@ export class CodeGenerator {
     const staticReflector = new StaticReflector(reflectorHost);
     StaticAndDynamicReflectionCapabilities.install(staticReflector);
     const htmlParser =
-        new compiler.I18NHtmlParser(new HtmlParser(), transContent, cliOptions.i18nFormat);
+        new compiler.I18NHtmlParser(new compiler.HtmlParser(), transContent, cliOptions.i18nFormat);
     const config = new compiler.CompilerConfig({
       genDebugInfo: options.debug === true,
       defaultEncapsulation: ViewEncapsulation.Emulated,
       logBindingUpdate: false,
       useJit: false
     });
-    const normalizer = new DirectiveNormalizer(resourceLoader, urlResolver, htmlParser, config);
-    const expressionParser = new Parser(new Lexer());
-    const elementSchemaRegistry = new DomElementSchemaRegistry();
+    const normalizer =
+        new compiler.DirectiveNormalizer(resourceLoader, urlResolver, htmlParser, config);
+    const expressionParser = new compiler.Parser(new compiler.Lexer());
+    const elementSchemaRegistry = new compiler.DomElementSchemaRegistry();
     const console = new Console();
-    const tmplParser =
-        new TemplateParser(expressionParser, elementSchemaRegistry, htmlParser, console, []);
-    const resolver = new CompileMetadataResolver(
+    const tmplParser = new compiler.TemplateParser(
+        expressionParser, elementSchemaRegistry, htmlParser, console, []);
+    const resolver = new compiler.CompileMetadataResolver(
         new compiler.NgModuleResolver(staticReflector),
         new compiler.DirectiveResolver(staticReflector), new compiler.PipeResolver(staticReflector),
         elementSchemaRegistry, staticReflector);
     // TODO(vicb): do not pass cliOptions.i18nFormat here
     const offlineCompiler = new compiler.OfflineCompiler(
-        resolver, normalizer, tmplParser, new StyleCompiler(urlResolver), new ViewCompiler(config),
-        new NgModuleCompiler(), new TypeScriptEmitter(reflectorHost), cliOptions.locale,
-        cliOptions.i18nFormat);
+        resolver, normalizer, tmplParser, new compiler.StyleCompiler(urlResolver),
+        new compiler.ViewCompiler(config, elementSchemaRegistry),
+        new compiler.DirectiveWrapperCompiler(
+            config, expressionParser, elementSchemaRegistry, console),
+        new compiler.NgModuleCompiler(), new compiler.TypeScriptEmitter(reflectorHost),
+        cliOptions.locale, cliOptions.i18nFormat);
 
     return new CodeGenerator(
         options, program, compilerHost, staticReflector, offlineCompiler, reflectorHost);
   }
 }
 
-interface FileMetadata {
-  fileUrl: string;
-  components: StaticSymbol[];
-  ngModules: StaticSymbol[];
+export function extractProgramSymbols(
+    program: ts.Program, staticReflector: StaticReflector, reflectorHost: StaticReflectorHost,
+    options: AngularCompilerOptions): StaticSymbol[] {
+  // Compare with false since the default should be true
+  const skipFileNames =
+      options.generateCodeForLibraries === false ? GENERATED_OR_DTS_FILES : GENERATED_FILES;
+
+  const staticSymbols: StaticSymbol[] = [];
+
+  program.getSourceFiles()
+      .filter(sourceFile => !skipFileNames.test(sourceFile.fileName))
+      .forEach(sourceFile => {
+        const absSrcPath = reflectorHost.getCanonicalFileName(sourceFile.fileName);
+
+        const moduleMetadata = staticReflector.getModuleMetadata(absSrcPath);
+        if (!moduleMetadata) {
+          console.log(`WARNING: no metadata found for ${absSrcPath}`);
+          return;
+        }
+
+        const metadata = moduleMetadata['metadata'];
+
+        if (!metadata) {
+          return;
+        }
+
+        for (const symbol of Object.keys(metadata)) {
+          if (metadata[symbol] && metadata[symbol].__symbolic == 'error') {
+            // Ignore symbols that are only included to record error information.
+            continue;
+          }
+          staticSymbols.push(reflectorHost.findDeclaration(absSrcPath, symbol, absSrcPath));
+        }
+      });
+
+  return staticSymbols;
 }

@@ -6,57 +6,11 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {getSymbolIterator, isArray, isBlank, isJsObject, isPresent} from './lang';
+import {getSymbolIterator, isBlank, isJsObject, isPresent} from './lang';
 
-// Safari and Internet Explorer do not support the iterable parameter to the
-// Map constructor.  We work around that by manually adding the items.
-const createMapFromPairs: {(pairs: any[]): Map<any, any>} = (function() {
-  try {
-    if (new Map(<any>[[1, 2]]).size === 1) {
-      return function createMapFromPairs(pairs: any[]): Map<any, any> { return new Map(pairs); };
-    }
-  } catch (e) {
-  }
-  return function createMapAndPopulateFromPairs(pairs: any[]): Map<any, any> {
-    var map = new Map();
-    for (var i = 0; i < pairs.length; i++) {
-      var pair = pairs[i];
-      map.set(pair[0], pair[1]);
-    }
-    return map;
-  };
-})();
-const createMapFromMap: {(m: Map<any, any>): Map<any, any>} = (function() {
-  try {
-    if (new Map(<any>new Map())) {
-      return function createMapFromMap(m: Map<any, any>): Map<any, any> { return new Map(<any>m); };
-    }
-  } catch (e) {
-  }
-  return function createMapAndPopulateFromMap(m: Map<any, any>): Map<any, any> {
-    var map = new Map();
-    m.forEach((v, k) => { map.set(k, v); });
-    return map;
-  };
-})();
-const _clearValues: {(m: Map<any, any>): void} = (function() {
-  if ((<any>(new Map()).keys()).next) {
-    return function _clearValues(m: Map<any, any>) {
-      var keyIterator = m.keys();
-      var k: any /** TODO #???? */;
-      while (!((k = (<any>keyIterator).next()).done)) {
-        m.set(k.value, null);
-      }
-    };
-  } else {
-    return function _clearValuesWithForeEach(m: Map<any, any>) {
-      m.forEach((v, k) => { m.set(k, null); });
-    };
-  }
-})();
 // Safari doesn't implement MapIterator.next(), which is used is Traceur's polyfill of Array.from
 // TODO(mlaval): remove the work around once we have a working polyfill of Array.from
-var _arrayFromMap: {(m: Map<any, any>, getValues: boolean): any[]} = (function() {
+const _arrayFromMap: {(m: Map<any, any>, getValues: boolean): any[]} = (function() {
   try {
     if ((<any>(new Map()).values()).next) {
       return function createArrayFromMap(m: Map<any, any>, getValues: boolean): any[] {
@@ -83,13 +37,6 @@ export class MapWrapper {
     }
     return result;
   }
-  static toStringMap<T>(m: Map<string, T>): {[key: string]: T} {
-    var r: {[key: string]: T} = {};
-    m.forEach((v, k) => r[k] = v);
-    return r;
-  }
-  static createFromPairs(pairs: any[]): Map<any, any> { return createMapFromPairs(pairs); }
-  static iterable<T>(m: T): T { return m; }
   static keys<K>(m: Map<K, any>): K[] { return _arrayFromMap(m, false); }
   static values<V>(m: Map<any, V>): V[] { return _arrayFromMap(m, true); }
 }
@@ -138,78 +85,29 @@ export class StringMapWrapper {
 export interface Predicate<T> { (value: T, index?: number, array?: T[]): boolean; }
 
 export class ListWrapper {
-  // JS has no way to express a statically fixed size list, but dart does so we
-  // keep both methods.
-  static createFixedSize(size: number): any[] { return new Array(size); }
-  static createGrowableSize(size: number): any[] { return new Array(size); }
-  static clone<T>(array: T[]): T[] { return array.slice(0); }
-  static forEachWithIndex<T>(array: T[], fn: (t: T, n: number) => void) {
-    for (var i = 0; i < array.length; i++) {
-      fn(array[i], i);
-    }
-  }
-  static first<T>(array: T[]): T {
-    if (!array) return null;
-    return array[0];
-  }
-  static last<T>(array: T[]): T {
-    if (!array || array.length == 0) return null;
-    return array[array.length - 1];
-  }
-  static indexOf<T>(array: T[], value: T, startIndex: number = 0): number {
-    return array.indexOf(value, startIndex);
-  }
-  static contains<T>(list: T[], el: T): boolean { return list.indexOf(el) !== -1; }
-  static reversed<T>(array: T[]): T[] {
-    var a = ListWrapper.clone(array);
-    return a.reverse();
-  }
-  static concat(a: any[], b: any[]): any[] { return a.concat(b); }
-  static insert<T>(list: T[], index: number, value: T) { list.splice(index, 0, value); }
-  static removeAt<T>(list: T[], index: number): T {
-    var res = list[index];
-    list.splice(index, 1);
-    return res;
-  }
   static removeAll<T>(list: T[], items: T[]) {
-    for (var i = 0; i < items.length; ++i) {
-      var index = list.indexOf(items[i]);
+    for (let i = 0; i < items.length; ++i) {
+      const index = list.indexOf(items[i]);
       list.splice(index, 1);
     }
   }
+
   static remove<T>(list: T[], el: T): boolean {
-    var index = list.indexOf(el);
+    const index = list.indexOf(el);
     if (index > -1) {
       list.splice(index, 1);
       return true;
     }
     return false;
   }
-  static clear(list: any[]) { list.length = 0; }
-  static isEmpty(list: any[]): boolean { return list.length == 0; }
-  static fill(list: any[], value: any, start: number = 0, end: number = null) {
-    list.fill(value, start, end === null ? list.length : end);
-  }
+
   static equals(a: any[], b: any[]): boolean {
     if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; ++i) {
+    for (let i = 0; i < a.length; ++i) {
       if (a[i] !== b[i]) return false;
     }
     return true;
   }
-  static slice<T>(l: T[], from: number = 0, to: number = null): T[] {
-    return l.slice(from, to === null ? undefined : to);
-  }
-  static splice<T>(l: T[], from: number, length: number): T[] { return l.splice(from, length); }
-  static sort<T>(l: T[], compareFn?: (a: T, b: T) => number) {
-    if (isPresent(compareFn)) {
-      l.sort(compareFn);
-    } else {
-      l.sort();
-    }
-  }
-  static toString<T>(l: T[]): string { return l.toString(); }
-  static toJSON<T>(l: T[]): string { return JSON.stringify(l); }
 
   static maximum<T>(list: T[], predicate: (t: T) => number): T {
     if (list.length == 0) {
@@ -219,7 +117,7 @@ export class ListWrapper {
     var maxValue = -Infinity;
     for (var index = 0; index < list.length; index++) {
       var candidate = list[index];
-      if (isBlank(candidate)) {
+      if (candidate == null) {
         continue;
       }
       var candidateValue = predicate(candidate);
@@ -236,19 +134,13 @@ export class ListWrapper {
     _flattenArray(list, target);
     return target;
   }
-
-  static addAll<T>(list: Array<T>, source: Array<T>): void {
-    for (var i = 0; i < source.length; i++) {
-      list.push(source[i]);
-    }
-  }
 }
 
 function _flattenArray(source: any[], target: any[]): any[] {
   if (isPresent(source)) {
-    for (var i = 0; i < source.length; i++) {
-      var item = source[i];
-      if (isArray(item)) {
+    for (let i = 0; i < source.length; i++) {
+      const item = source[i];
+      if (Array.isArray(item)) {
         _flattenArray(item, target);
       } else {
         target.push(item);
@@ -261,14 +153,14 @@ function _flattenArray(source: any[], target: any[]): any[] {
 
 export function isListLikeIterable(obj: any): boolean {
   if (!isJsObject(obj)) return false;
-  return isArray(obj) ||
+  return Array.isArray(obj) ||
       (!(obj instanceof Map) &&      // JS Map are iterables but return entries as [k, v]
        getSymbolIterator() in obj);  // JS Iterable have a Symbol.iterator prop
 }
 
 export function areIterablesEqual(a: any, b: any, comparator: Function): boolean {
-  var iterator1 = a[getSymbolIterator()]();
-  var iterator2 = b[getSymbolIterator()]();
+  const iterator1 = a[getSymbolIterator()]();
+  const iterator2 = b[getSymbolIterator()]();
 
   while (true) {
     let item1 = iterator1.next();
@@ -280,13 +172,13 @@ export function areIterablesEqual(a: any, b: any, comparator: Function): boolean
 }
 
 export function iterateListLike(obj: any, fn: Function) {
-  if (isArray(obj)) {
+  if (Array.isArray(obj)) {
     for (var i = 0; i < obj.length; i++) {
       fn(obj[i]);
     }
   } else {
-    var iterator = obj[getSymbolIterator()]();
-    var item: any /** TODO #???? */;
+    const iterator = obj[getSymbolIterator()]();
+    let item: any;
     while (!((item = iterator.next()).done)) {
       fn(item.value);
     }

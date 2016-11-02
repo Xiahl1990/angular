@@ -8,13 +8,12 @@
 
 import {DatePipe} from '@angular/common';
 import {PipeResolver} from '@angular/compiler/src/pipe_resolver';
-import {beforeEach, describe, expect, it} from '@angular/core/testing/testing_internal';
 import {browserDetection} from '@angular/platform-browser/testing/browser_util';
 
 export function main() {
   describe('DatePipe', () => {
-    var date: Date;
-    var pipe: DatePipe;
+    let date: Date;
+    let pipe: DatePipe;
 
     // TODO: reactivate the disabled expectations once emulators are fixed in SauceLabs
     // In some old versions of Chrome in Android emulators, time formatting returns dates in the
@@ -34,7 +33,9 @@ export function main() {
 
     describe('supports', () => {
       it('should support date', () => { expect(() => pipe.transform(date)).not.toThrow(); });
+
       it('should support int', () => { expect(() => pipe.transform(123456789)).not.toThrow(); });
+
       it('should support numeric strings',
          () => { expect(() => pipe.transform('123456789')).not.toThrow(); });
 
@@ -59,7 +60,7 @@ export function main() {
         expect(pipe.transform(date, 'MMM')).toEqual('Jun');
         expect(pipe.transform(date, 'MMMM')).toEqual('June');
         expect(pipe.transform(date, 'd')).toEqual('15');
-        expect(pipe.transform(date, 'E')).toEqual('Mon');
+        expect(pipe.transform(date, 'EEE')).toEqual('Mon');
         expect(pipe.transform(date, 'EEEE')).toEqual('Monday');
         if (!browserDetection.isOldChrome) {
           expect(pipe.transform(date, 'h')).toEqual('9');
@@ -72,6 +73,9 @@ export function main() {
           if (!browserDetection.isOldChrome) {
             expect(pipe.transform(date, 'HH')).toEqual('09');
           }
+
+          expect(pipe.transform(date, 'E')).toEqual('M');
+          expect(pipe.transform(date, 'L')).toEqual('J');
           expect(pipe.transform(date, 'm')).toEqual('3');
           expect(pipe.transform(date, 's')).toEqual('1');
           expect(pipe.transform(date, 'mm')).toEqual('03');
@@ -81,13 +85,13 @@ export function main() {
       });
 
       it('should format common multi component patterns', () => {
-        expect(pipe.transform(date, 'E, M/d/y')).toEqual('Mon, 6/15/2015');
-        expect(pipe.transform(date, 'E, M/d')).toEqual('Mon, 6/15');
+        expect(pipe.transform(date, 'EEE, M/d/y')).toEqual('Mon, 6/15/2015');
+        expect(pipe.transform(date, 'EEE, M/d')).toEqual('Mon, 6/15');
         expect(pipe.transform(date, 'MMM d')).toEqual('Jun 15');
         expect(pipe.transform(date, 'dd/MM/yyyy')).toEqual('15/06/2015');
         expect(pipe.transform(date, 'MM/dd/yyyy')).toEqual('06/15/2015');
-        expect(pipe.transform(date, 'yMEd')).toEqual('20156Mon15');
-        expect(pipe.transform(date, 'MEd')).toEqual('6Mon15');
+        expect(pipe.transform(date, 'yMEEEd')).toEqual('20156Mon15');
+        expect(pipe.transform(date, 'MEEEd')).toEqual('6Mon15');
         expect(pipe.transform(date, 'MMMd')).toEqual('Jun15');
         expect(pipe.transform(date, 'yMMMMEEEEd')).toEqual('Monday, June 15, 2015');
         // IE and Edge can't format a date to minutes and seconds without hours

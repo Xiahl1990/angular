@@ -1,6 +1,13 @@
+/**
+ * @license
+ * Copyright Google Inc. All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+
 import {PromiseWrapper} from '@angular/facade/src/async';
-import {ListWrapper, Map, MapWrapper} from '@angular/facade/src/collection';
-import {Type, isPresent, print} from '@angular/facade/src/lang';
+import {Type, print} from '@angular/facade/src/lang';
 import {bootstrap} from '@angular/platform-browser';
 import {BrowserDomAdapter} from '@angular/platform-browser/src/browser/browser_adapter';
 import {DOM} from '@angular/platform-browser/src/dom/dom_adapter';
@@ -57,8 +64,8 @@ function measureWrapper(func, desc) {
 
 
 class MultiplyDirectiveResolver extends DirectiveResolver {
-  _multiplyBy: number;
-  _cache = new Map<Type, ViewMetadata>();
+  private _multiplyBy: number;
+  private _cache = new Map<Type, ViewMetadata>();
 
   constructor(multiple: number, components: Type[]) {
     super();
@@ -66,9 +73,9 @@ class MultiplyDirectiveResolver extends DirectiveResolver {
     components.forEach(c => this._fillCache(c));
   }
 
-  _fillCache(component: Type) {
+  private _fillCache(component: Type) {
     var view = super.resolve(component);
-    var multipliedTemplates = ListWrapper.createFixedSize(this._multiplyBy);
+    var multipliedTemplates = new Array(this._multiplyBy);
     for (var i = 0; i < this._multiplyBy; ++i) {
       multipliedTemplates[i] = view.template;
     }
@@ -78,8 +85,7 @@ class MultiplyDirectiveResolver extends DirectiveResolver {
   }
 
   resolve(component: Type): ViewMetadata {
-    var result = this._cache.get(component);
-    return isPresent(result) ? result : super.resolve(component);
+    return this._cache.get(component) || super.resolve(component);
   }
 }
 

@@ -53,10 +53,9 @@ export function scheduleMicroTask(fn: Function) {
 
 // Need to declare a new variable for global here since TypeScript
 // exports the original value of the symbol.
-var _global: BrowserNodeGlobal = globalScope;
+const _global: BrowserNodeGlobal = globalScope;
 
 export {_global as global};
-
 
 export function getTypeNameForDebugging(type: any): string {
   return type['name'] || typeof type;
@@ -70,51 +69,21 @@ _global.assert = function assert(condition) {
 };
 
 export function isPresent(obj: any): boolean {
-  return obj !== undefined && obj !== null;
+  return obj != null;
 }
 
 export function isBlank(obj: any): boolean {
-  return obj === undefined || obj === null;
-}
-
-export function isBoolean(obj: any): boolean {
-  return typeof obj === 'boolean';
-}
-
-export function isNumber(obj: any): boolean {
-  return typeof obj === 'number';
-}
-
-export function isString(obj: any): obj is string {
-  return typeof obj === 'string';
-}
-
-export function isFunction(obj: any): boolean {
-  return typeof obj === 'function';
-}
-
-export function isType(obj: any): boolean {
-  return isFunction(obj);
-}
-
-export function isStringMap(obj: any): obj is Object {
-  return typeof obj === 'object' && obj !== null;
+  return obj == null;
 }
 
 const STRING_MAP_PROTO = Object.getPrototypeOf({});
 export function isStrictStringMap(obj: any): boolean {
-  return isStringMap(obj) && Object.getPrototypeOf(obj) === STRING_MAP_PROTO;
-}
-
-export function isArray(obj: any): boolean {
-  return Array.isArray(obj);
+  return typeof obj === 'object' && obj !== null && Object.getPrototypeOf(obj) === STRING_MAP_PROTO;
 }
 
 export function isDate(obj: any): obj is Date {
   return obj instanceof Date && !isNaN(obj.valueOf());
 }
-
-export function noop() {}
 
 export function stringify(token: any): string {
   if (typeof token === 'string') {
@@ -137,89 +106,9 @@ export function stringify(token: any): string {
   return newLineIndex === -1 ? res : res.substring(0, newLineIndex);
 }
 
-export class StringWrapper {
-  static fromCharCode(code: number): string { return String.fromCharCode(code); }
-
-  static charCodeAt(s: string, index: number): number { return s.charCodeAt(index); }
-
-  static split(s: string, regExp: RegExp): string[] { return s.split(regExp); }
-
-  static equals(s: string, s2: string): boolean { return s === s2; }
-
-  static stripLeft(s: string, charVal: string): string {
-    if (s && s.length) {
-      var pos = 0;
-      for (var i = 0; i < s.length; i++) {
-        if (s[i] != charVal) break;
-        pos++;
-      }
-      s = s.substring(pos);
-    }
-    return s;
-  }
-
-  static stripRight(s: string, charVal: string): string {
-    if (s && s.length) {
-      var pos = s.length;
-      for (var i = s.length - 1; i >= 0; i--) {
-        if (s[i] != charVal) break;
-        pos--;
-      }
-      s = s.substring(0, pos);
-    }
-    return s;
-  }
-
-  static replace(s: string, from: string, replace: string): string {
-    return s.replace(from, replace);
-  }
-
-  static replaceAll(s: string, from: RegExp, replace: string): string {
-    return s.replace(from, replace);
-  }
-
-  static slice<T>(s: string, from: number = 0, to: number = null): string {
-    return s.slice(from, to === null ? undefined : to);
-  }
-
-  static replaceAllMapped(s: string, from: RegExp, cb: (m: string[]) => string): string {
-    return s.replace(from, function(...matches: any[]) {
-      // Remove offset & string from the result array
-      matches.splice(-2, 2);
-      // The callback receives match, p1, ..., pn
-      return cb(matches);
-    });
-  }
-
-  static contains(s: string, substr: string): boolean { return s.indexOf(substr) != -1; }
-
-  static compare(a: string, b: string): number {
-    if (a < b) {
-      return -1;
-    } else if (a > b) {
-      return 1;
-    } else {
-      return 0;
-    }
-  }
-}
-
-export class StringJoiner {
-  constructor(public parts: string[] = []) {}
-
-  add(part: string): void { this.parts.push(part); }
-
-  toString(): string { return this.parts.join(''); }
-}
-
-
 export class NumberWrapper {
-  static toFixed(n: number, fractionDigits: number): string { return n.toFixed(fractionDigits); }
-
-  static equal(a: number, b: number): boolean { return a === b; }
-
   static parseIntAutoRadix(text: string): number {
-    var result: number = parseInt(text);
+    const result: number = parseInt(text);
     if (isNaN(result)) {
       throw new Error('Invalid integer literal when parsing ' + text);
     }
@@ -236,7 +125,7 @@ export class NumberWrapper {
         return parseInt(text, radix);
       }
     } else {
-      var result: number = parseInt(text, radix);
+      const result = parseInt(text, radix);
       if (!isNaN(result)) {
         return result;
       }
@@ -244,40 +133,12 @@ export class NumberWrapper {
     throw new Error('Invalid integer literal when parsing ' + text + ' in base ' + radix);
   }
 
-  static get NaN(): number { return NaN; }
-
   static isNumeric(value: any): boolean { return !isNaN(value - parseFloat(value)); }
-
-  static isNaN(value: any): boolean { return isNaN(value); }
-
-  static isInteger(value: any): boolean { return Number.isInteger(value); }
-}
-
-export var RegExp = _global.RegExp;
-
-export class FunctionWrapper {
-  static apply(fn: Function, posArgs: any): any { return fn.apply(null, posArgs); }
-
-  static bind(fn: Function, scope: any): Function { return fn.bind(scope); }
 }
 
 // JS has NaN !== NaN
 export function looseIdentical(a: any, b: any): boolean {
   return a === b || typeof a === 'number' && typeof b === 'number' && isNaN(a) && isNaN(b);
-}
-
-// JS considers NaN is the same as NaN for map Key (while NaN !== NaN otherwise)
-// see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map
-export function getMapKey<T>(value: T): T {
-  return value;
-}
-
-export function normalizeBlank(obj: Object): any {
-  return isBlank(obj) ? null : obj;
-}
-
-export function normalizeBool(obj: boolean): boolean {
-  return isBlank(obj) ? false : obj;
 }
 
 export function isJsObject(o: any): boolean {
@@ -290,15 +151,6 @@ export function print(obj: Error | Object) {
 
 export function warn(obj: Error | Object) {
   console.warn(obj);
-}
-
-// Can't be all uppercase as our transpiler would think it is a special directive...
-export class Json {
-  static parse(s: string): Object { return _global.JSON.parse(s); }
-  static stringify(data: Object): string {
-    // Dart doesn't take 3 arguments
-    return _global.JSON.stringify(data, null, 2);
-  }
 }
 
 export function setValueOnPath(global: any, path: string, value: any) {
@@ -319,17 +171,17 @@ export function setValueOnPath(global: any, path: string, value: any) {
 }
 
 // When Symbol.iterator doesn't exist, retrieves the key used in es6-shim
-declare var Symbol: any;
-var _symbolIterator: any = null;
+declare let Symbol: any;
+let _symbolIterator: any = null;
 export function getSymbolIterator(): string|symbol {
-  if (isBlank(_symbolIterator)) {
-    if (isPresent((<any>globalScope).Symbol) && isPresent(Symbol.iterator)) {
+  if (!_symbolIterator) {
+    if ((<any>globalScope).Symbol && Symbol.iterator) {
       _symbolIterator = Symbol.iterator;
     } else {
       // es6-shim specific logic
-      var keys = Object.getOwnPropertyNames(Map.prototype);
-      for (var i = 0; i < keys.length; ++i) {
-        var key = keys[i];
+      const keys = Object.getOwnPropertyNames(Map.prototype);
+      for (let i = 0; i < keys.length; ++i) {
+        let key = keys[i];
         if (key !== 'entries' && key !== 'size' &&
             (Map as any).prototype[key] === Map.prototype['entries']) {
           _symbolIterator = key;
@@ -340,28 +192,8 @@ export function getSymbolIterator(): string|symbol {
   return _symbolIterator;
 }
 
-export function evalExpression(
-    sourceUrl: string, expr: string, declarations: string, vars: {[key: string]: any}): any {
-  var fnBody = `${declarations}\nreturn ${expr}\n//# sourceURL=${sourceUrl}`;
-  var fnArgNames: string[] = [];
-  var fnArgValues: any[] = [];
-  for (var argName in vars) {
-    fnArgNames.push(argName);
-    fnArgValues.push(vars[argName]);
-  }
-  return new Function(...fnArgNames.concat(fnBody))(...fnArgValues);
-}
-
 export function isPrimitive(obj: any): boolean {
   return !isJsObject(obj);
-}
-
-export function hasConstructor(value: Object, type: any): boolean {
-  return value.constructor === type;
-}
-
-export function escape(s: string): string {
-  return _global.encodeURI(s);
 }
 
 export function escapeRegExp(s: string): string {

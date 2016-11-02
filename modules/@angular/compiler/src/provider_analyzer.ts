@@ -8,8 +8,8 @@
 
 
 import {CompileDiDependencyMetadata, CompileDirectiveMetadata, CompileNgModuleMetadata, CompileProviderMetadata, CompileQueryMetadata, CompileTokenMetadata, CompileTypeMetadata} from './compile_metadata';
-import {ListWrapper, MapWrapper} from './facade/collection';
-import {isArray, isBlank, isPresent, normalizeBlank} from './facade/lang';
+import {MapWrapper} from './facade/collection';
+import {isBlank, isPresent} from './facade/lang';
 import {Identifiers, resolveIdentifierToken} from './identifiers';
 import {ParseError, ParseSourceSpan} from './parse_util';
 import {AttrAst, DirectiveAst, ProviderAst, ProviderAstType, ReferenceAst} from './template_parser/template_ast';
@@ -91,9 +91,9 @@ export class ProviderElementContext {
 
   get transformedDirectiveAsts(): DirectiveAst[] {
     var sortedProviderTypes = this.transformProviders.map(provider => provider.token.identifier);
-    var sortedDirectives = ListWrapper.clone(this._directiveAsts);
-    ListWrapper.sort(
-        sortedDirectives, (dir1, dir2) => sortedProviderTypes.indexOf(dir1.directive.type) -
+    var sortedDirectives = this._directiveAsts.slice();
+    sortedDirectives.sort(
+        (dir1, dir2) => sortedProviderTypes.indexOf(dir1.directive.type) -
             sortedProviderTypes.indexOf(dir2.directive.type));
     return sortedDirectives;
   }
@@ -102,7 +102,7 @@ export class ProviderElementContext {
 
   private _addQueryReadsTo(token: CompileTokenMetadata, queryReadTokens: Map<any, boolean>) {
     this._getQueriesFor(token).forEach((query) => {
-      const queryReadToken = isPresent(query.read) ? query.read : token;
+      const queryReadToken = query.read || token;
       if (isBlank(queryReadTokens.get(queryReadToken.reference))) {
         queryReadTokens.set(queryReadToken.reference, true);
       }
@@ -117,7 +117,7 @@ export class ProviderElementContext {
     while (currentEl !== null) {
       queries = currentEl._contentQueries.get(token.reference);
       if (isPresent(queries)) {
-        ListWrapper.addAll(result, queries.filter((query) => query.descendants || distance <= 1));
+        result.push(...queries.filter((query) => query.descendants || distance <= 1));
       }
       if (currentEl._directiveAsts.length > 0) {
         distance++;
@@ -126,7 +126,7 @@ export class ProviderElementContext {
     }
     queries = this.viewContext.viewQueries.get(token.reference);
     if (isPresent(queries)) {
-      ListWrapper.addAll(result, queries);
+      result.push(...queries);
     }
     return result;
   }
@@ -169,11 +169,11 @@ export class ProviderElementContext {
           transformedUseValue = existingDiDep.value;
         }
       } else if (isPresent(provider.useFactory)) {
-        var deps = isPresent(provider.deps) ? provider.deps : provider.useFactory.diDeps;
+        var deps = provider.deps || provider.useFactory.diDeps;
         transformedDeps =
             deps.map((dep) => this._getDependency(resolvedProvider.providerType, dep, eager));
       } else if (isPresent(provider.useClass)) {
-        var deps = isPresent(provider.deps) ? provider.deps : provider.useClass.diDeps;
+        var deps = provider.deps || provider.useClass.diDeps;
         transformedDeps =
             deps.map((dep) => this._getDependency(resolvedProvider.providerType, dep, eager));
       }
@@ -194,10 +194,8 @@ export class ProviderElementContext {
       eager: boolean = null): CompileDiDependencyMetadata {
     if (dep.isAttribute) {
       var attrValue = this._attrs[dep.token.value];
-      return new CompileDiDependencyMetadata({isValue: true, value: normalizeBlank(attrValue)});
-    }
-    if (isPresent(dep.query) || isPresent(dep.viewQuery)) {
-      return dep;
+      return new CompileDiDependencyMetadata(
+          {isValue: true, value: attrValue == null ? null : attrValue});
     }
 
     if (isPresent(dep.token)) {
@@ -338,11 +336,11 @@ export class NgModuleProviderAnalyzer {
           transformedUseValue = existingDiDep.value;
         }
       } else if (isPresent(provider.useFactory)) {
-        var deps = isPresent(provider.deps) ? provider.deps : provider.useFactory.diDeps;
+        var deps = provider.deps || provider.useFactory.diDeps;
         transformedDeps =
             deps.map((dep) => this._getDependency(dep, eager, resolvedProvider.sourceSpan));
       } else if (isPresent(provider.useClass)) {
-        var deps = isPresent(provider.deps) ? provider.deps : provider.useClass.diDeps;
+        var deps = provider.deps || provider.useClass.diDeps;
         transformedDeps =
             deps.map((dep) => this._getDependency(dep, eager, resolvedProvider.sourceSpan));
       }
@@ -418,7 +416,7 @@ function _normalizeProviders(
   }
   if (isPresent(providers)) {
     providers.forEach((provider) => {
-      if (isArray(provider)) {
+      if (Array.isArray(provider)) {
         _normalizeProviders(<any[]>provider, sourceSpan, targetErrors, targetProviders);
       } else {
         let normalizeProvider: CompileProviderMetadata;
@@ -489,7 +487,7 @@ function _resolveProviders(
       targetProvidersByToken.set(provider.token.reference, resolvedProvider);
     } else {
       if (!provider.multi) {
-        ListWrapper.clear(resolvedProvider.providers);
+        resolvedProvider.providers.length = 0;
       }
       resolvedProvider.providers.push(provider);
     }
@@ -502,11 +500,6 @@ function _getViewQueries(component: CompileDirectiveMetadata): Map<any, CompileQ
   if (isPresent(component.viewQueries)) {
     component.viewQueries.forEach((query) => _addQueryToTokenMap(viewQueries, query));
   }
-  component.type.diDeps.forEach((dep) => {
-    if (isPresent(dep.viewQuery)) {
-      _addQueryToTokenMap(viewQueries, dep.viewQuery);
-    }
-  });
   return viewQueries;
 }
 
@@ -517,11 +510,6 @@ function _getContentQueries(directives: CompileDirectiveMetadata[]):
     if (isPresent(directive.queries)) {
       directive.queries.forEach((query) => _addQueryToTokenMap(contentQueries, query));
     }
-    directive.type.diDeps.forEach((dep) => {
-      if (isPresent(dep.query)) {
-        _addQueryToTokenMap(contentQueries, dep.query);
-      }
-    });
   });
   return contentQueries;
 }

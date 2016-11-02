@@ -7,7 +7,7 @@
  */
 
 import {Inject, Injectable, RenderComponentType, Renderer, RootRenderer, ViewEncapsulation} from '@angular/core';
-import {Json, StringWrapper, isArray, isBlank, isPresent, isString, stringify} from '../facade/lang';
+import {isBlank, isPresent, stringify} from '../facade/lang';
 import {AnimationKeyframe, AnimationPlayer, AnimationStyles, RenderDebugInfo} from '../private_import_core';
 
 import {AnimationDriver} from './animation_driver';
@@ -74,7 +74,7 @@ export class DomRenderer implements Renderer {
 
   selectRootElement(selectorOrNode: string|any, debugInfo: RenderDebugInfo): Element {
     var el: any /** TODO #9100 */;
-    if (isString(selectorOrNode)) {
+    if (typeof selectorOrNode === 'string') {
       el = getDOM().querySelector(this._rootRenderer.document, selectorOrNode);
       if (isBlank(el)) {
         throw new Error(`The selector "${selectorOrNode}" did not match any elements`);
@@ -192,13 +192,13 @@ export class DomRenderer implements Renderer {
   setBindingDebugInfo(renderElement: any, propertyName: string, propertyValue: string): void {
     var dashCasedPropertyName = camelCaseToDashCase(propertyName);
     if (getDOM().isCommentNode(renderElement)) {
-      const existingBindings = StringWrapper.replaceAll(getDOM().getText(renderElement), /\n/g, '')
-                                   .match(TEMPLATE_BINDINGS_EXP);
-      var parsedBindings = Json.parse(existingBindings[1]);
+      const existingBindings =
+          getDOM().getText(renderElement).replace(/\n/g, '').match(TEMPLATE_BINDINGS_EXP);
+      var parsedBindings = JSON.parse(existingBindings[1]);
       (parsedBindings as any /** TODO #9100 */)[dashCasedPropertyName] = propertyValue;
       getDOM().setText(
           renderElement,
-          StringWrapper.replace(TEMPLATE_COMMENT_TEXT, '{}', Json.stringify(parsedBindings)));
+          TEMPLATE_COMMENT_TEXT.replace('{}', JSON.stringify(parsedBindings, null, 2)));
     } else {
       this.setElementAttribute(renderElement, propertyName, propertyValue);
     }
@@ -272,20 +272,21 @@ export const HOST_ATTR = `_nghost-${COMPONENT_VARIABLE}`;
 export const CONTENT_ATTR = `_ngcontent-${COMPONENT_VARIABLE}`;
 
 function _shimContentAttribute(componentShortId: string): string {
-  return StringWrapper.replaceAll(CONTENT_ATTR, COMPONENT_REGEX, componentShortId);
+  return CONTENT_ATTR.replace(COMPONENT_REGEX, componentShortId);
 }
 
 function _shimHostAttribute(componentShortId: string): string {
-  return StringWrapper.replaceAll(HOST_ATTR, COMPONENT_REGEX, componentShortId);
+  return HOST_ATTR.replace(COMPONENT_REGEX, componentShortId);
 }
 
 function _flattenStyles(compId: string, styles: Array<any|any[]>, target: string[]): string[] {
-  for (var i = 0; i < styles.length; i++) {
-    var style = styles[i];
-    if (isArray(style)) {
+  for (let i = 0; i < styles.length; i++) {
+    let style = styles[i];
+
+    if (Array.isArray(style)) {
       _flattenStyles(compId, style, target);
     } else {
-      style = StringWrapper.replaceAll(style, COMPONENT_REGEX, compId);
+      style = style.replace(COMPONENT_REGEX, compId);
       target.push(style);
     }
   }

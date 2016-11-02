@@ -6,11 +6,10 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {ANALYZE_FOR_ENTRY_COMPONENTS, ChangeDetectionStrategy, ChangeDetectorRef, ComponentFactory, ComponentFactoryResolver, ElementRef, Injector, LOCALE_ID as LOCALE_ID_, NgModuleFactory, QueryList, RenderComponentType, Renderer, SecurityContext, SimpleChange, TRANSLATIONS_FORMAT as TRANSLATIONS_FORMAT_, TemplateRef, ViewContainerRef, ViewEncapsulation} from '@angular/core';
+import {ANALYZE_FOR_ENTRY_COMPONENTS, AnimationTransitionEvent, ChangeDetectionStrategy, ChangeDetectorRef, ComponentFactory, ComponentFactoryResolver, ElementRef, Injector, LOCALE_ID, NgModuleFactory, QueryList, RenderComponentType, Renderer, SecurityContext, SimpleChange, TRANSLATIONS_FORMAT, TemplateRef, ViewContainerRef, ViewEncapsulation} from '@angular/core';
 
 import {CompileIdentifierMetadata, CompileTokenMetadata} from './compile_metadata';
-import {AnimationGroupPlayer, AnimationKeyframe, AnimationSequencePlayer, AnimationStyles, AppElement, AppView, ChangeDetectorStatus, CodegenComponentFactoryResolver, DebugAppView, DebugContext, EMPTY_ARRAY, EMPTY_MAP, NgModuleInjector, NoOpAnimationPlayer, StaticNodeDebugInfo, TemplateRef_, UNINITIALIZED, ValueUnwrapper, ViewType, ViewUtils, balanceAnimationKeyframes, castByValue, checkBinding, clearStyles, collectAndResolveStyles, devModeEqual, flattenNestedViewRenderNodes, interpolate, prepareFinalAnimationStyles, pureProxy1, pureProxy10, pureProxy2, pureProxy3, pureProxy4, pureProxy5, pureProxy6, pureProxy7, pureProxy8, pureProxy9, reflector, registerModuleFactory, renderStyles} from './private_import_core';
-import {assetUrl} from './util';
+import {AnimationGroupPlayer, AnimationKeyframe, AnimationSequencePlayer, AnimationStyles, AnimationTransition, AppElement, AppView, ChangeDetectorStatus, CodegenComponentFactoryResolver, DebugAppView, DebugContext, NgModuleInjector, NoOpAnimationPlayer, StaticNodeDebugInfo, TemplateRef_, UNINITIALIZED, ValueUnwrapper, ViewType, balanceAnimationKeyframes, clearStyles, collectAndResolveStyles, devModeEqual, prepareFinalAnimationStyles, reflector, registerModuleFactory, renderStyles, view_utils} from './private_import_core';
 
 var APP_VIEW_MODULE_URL = assetUrl('core', 'linker/view');
 var VIEW_UTILS_MODULE_URL = assetUrl('core', 'linker/view_utils');
@@ -33,7 +32,7 @@ export class Identifiers {
   static ViewUtils: IdentifierSpec = {
     name: 'ViewUtils',
     moduleUrl: assetUrl('core', 'linker/view_utils'),
-    runtime: ViewUtils
+    runtime: view_utils.ViewUtils
   };
   static AppView:
       IdentifierSpec = {name: 'AppView', moduleUrl: APP_VIEW_MODULE_URL, runtime: AppView};
@@ -161,45 +160,52 @@ export class Identifiers {
   static checkBinding: IdentifierSpec = {
     name: 'checkBinding',
     moduleUrl: VIEW_UTILS_MODULE_URL,
-    runtime: checkBinding
-  };
-  static flattenNestedViewRenderNodes: IdentifierSpec = {
-    name: 'flattenNestedViewRenderNodes',
-    moduleUrl: VIEW_UTILS_MODULE_URL,
-    runtime: flattenNestedViewRenderNodes
+    runtime: view_utils.checkBinding
   };
   static devModeEqual:
       IdentifierSpec = {name: 'devModeEqual', moduleUrl: CD_MODULE_URL, runtime: devModeEqual};
   static interpolate: IdentifierSpec = {
     name: 'interpolate',
     moduleUrl: VIEW_UTILS_MODULE_URL,
-    runtime: interpolate
+    runtime: view_utils.interpolate
   };
   static castByValue: IdentifierSpec = {
     name: 'castByValue',
     moduleUrl: VIEW_UTILS_MODULE_URL,
-    runtime: castByValue
+    runtime: view_utils.castByValue
   };
   static EMPTY_ARRAY: IdentifierSpec = {
     name: 'EMPTY_ARRAY',
     moduleUrl: VIEW_UTILS_MODULE_URL,
-    runtime: EMPTY_ARRAY
+    runtime: view_utils.EMPTY_ARRAY
   };
-  static EMPTY_MAP:
-      IdentifierSpec = {name: 'EMPTY_MAP', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: EMPTY_MAP};
-
-  static pureProxies = [
+  static EMPTY_MAP: IdentifierSpec = {
+    name: 'EMPTY_MAP',
+    moduleUrl: VIEW_UTILS_MODULE_URL,
+    runtime: view_utils.EMPTY_MAP
+  };
+  static createRenderElement: IdentifierSpec = {
+    name: 'createRenderElement',
+    moduleUrl: VIEW_UTILS_MODULE_URL,
+    runtime: view_utils.createRenderElement
+  };
+  static selectOrCreateRenderHostElement: IdentifierSpec = {
+    name: 'selectOrCreateRenderHostElement',
+    moduleUrl: VIEW_UTILS_MODULE_URL,
+    runtime: view_utils.selectOrCreateRenderHostElement
+  };
+  static pureProxies: IdentifierSpec[] = [
     null,
-    {name: 'pureProxy1', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: pureProxy1},
-    {name: 'pureProxy2', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: pureProxy2},
-    {name: 'pureProxy3', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: pureProxy3},
-    {name: 'pureProxy4', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: pureProxy4},
-    {name: 'pureProxy5', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: pureProxy5},
-    {name: 'pureProxy6', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: pureProxy6},
-    {name: 'pureProxy7', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: pureProxy7},
-    {name: 'pureProxy8', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: pureProxy8},
-    {name: 'pureProxy9', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: pureProxy9},
-    {name: 'pureProxy10', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: pureProxy10},
+    {name: 'pureProxy1', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: view_utils.pureProxy1},
+    {name: 'pureProxy2', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: view_utils.pureProxy2},
+    {name: 'pureProxy3', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: view_utils.pureProxy3},
+    {name: 'pureProxy4', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: view_utils.pureProxy4},
+    {name: 'pureProxy5', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: view_utils.pureProxy5},
+    {name: 'pureProxy6', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: view_utils.pureProxy6},
+    {name: 'pureProxy7', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: view_utils.pureProxy7},
+    {name: 'pureProxy8', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: view_utils.pureProxy8},
+    {name: 'pureProxy9', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: view_utils.pureProxy9},
+    {name: 'pureProxy10', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: view_utils.pureProxy10},
   ];
   static SecurityContext: IdentifierSpec = {
     name: 'SecurityContext',
@@ -259,13 +265,64 @@ export class Identifiers {
   static LOCALE_ID: IdentifierSpec = {
     name: 'LOCALE_ID',
     moduleUrl: assetUrl('core', 'i18n/tokens'),
-    runtime: LOCALE_ID_
+    runtime: LOCALE_ID
   };
   static TRANSLATIONS_FORMAT: IdentifierSpec = {
     name: 'TRANSLATIONS_FORMAT',
     moduleUrl: assetUrl('core', 'i18n/tokens'),
-    runtime: TRANSLATIONS_FORMAT_
+    runtime: TRANSLATIONS_FORMAT
   };
+  static setBindingDebugInfo: IdentifierSpec = {
+    name: 'setBindingDebugInfo',
+    moduleUrl: VIEW_UTILS_MODULE_URL,
+    runtime: view_utils.setBindingDebugInfo
+  };
+  static setBindingDebugInfoForChanges: IdentifierSpec = {
+    name: 'setBindingDebugInfoForChanges',
+    moduleUrl: VIEW_UTILS_MODULE_URL,
+    runtime: view_utils.setBindingDebugInfoForChanges
+  };
+  static AnimationTransition: IdentifierSpec = {
+    name: 'AnimationTransition',
+    moduleUrl: assetUrl('core', 'animation/animation_transition'),
+    runtime: AnimationTransition
+  };
+
+  // This is just the interface!
+  static InlineArray:
+      IdentifierSpec = {name: 'InlineArray', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: null};
+  static inlineArrays: IdentifierSpec[] = [
+    {name: 'InlineArray2', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: view_utils.InlineArray2},
+    {name: 'InlineArray2', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: view_utils.InlineArray2},
+    {name: 'InlineArray4', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: view_utils.InlineArray4},
+    {name: 'InlineArray8', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: view_utils.InlineArray8},
+    {name: 'InlineArray16', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: view_utils.InlineArray16},
+  ];
+  static EMPTY_INLINE_ARRAY: IdentifierSpec = {
+    name: 'EMPTY_INLINE_ARRAY',
+    moduleUrl: VIEW_UTILS_MODULE_URL,
+    runtime: view_utils.EMPTY_INLINE_ARRAY
+  };
+  static InlineArrayDynamic: IdentifierSpec = {
+    name: 'InlineArrayDynamic',
+    moduleUrl: VIEW_UTILS_MODULE_URL,
+    runtime: view_utils.InlineArrayDynamic
+  };
+  static subscribeToRenderElement: IdentifierSpec = {
+    name: 'subscribeToRenderElement',
+    moduleUrl: VIEW_UTILS_MODULE_URL,
+    runtime: view_utils.subscribeToRenderElement
+  };
+  static noop:
+      IdentifierSpec = {name: 'noop', moduleUrl: VIEW_UTILS_MODULE_URL, runtime: view_utils.noop};
+}
+
+export function assetUrl(pkg: string, path: string = null, type: string = 'src'): string {
+  if (path == null) {
+    return `asset:@angular/lib/${pkg}/index`;
+  } else {
+    return `asset:@angular/lib/${pkg}/src/${path}`;
+  }
 }
 
 export function resolveIdentifier(identifier: IdentifierSpec) {

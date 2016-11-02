@@ -7,7 +7,6 @@
  */
 
 
-import {ListWrapper} from '../facade/collection';
 import {isPresent} from '../facade/lang';
 
 import * as o from './output_ast';
@@ -81,7 +80,7 @@ function createDynamicClass(
     _executeFunctionStatements(
         ctorParamNames, args, _classStmt.constructorMethod.body, instanceCtx, _visitor);
   };
-  var superClass = _classStmt.parent.visitExpression(_visitor, _ctx);
+  var superClass = _classStmt.parent ? _classStmt.parent.visitExpression(_visitor, _ctx) : Object;
   ctor.prototype = Object.create(superClass.prototype, propertyDescriptors);
   return ctor;
 }
@@ -153,13 +152,13 @@ class StatementInterpreter implements o.StatementVisitor, o.ExpressionVisitor {
     if (isPresent(expr.builtin)) {
       switch (expr.builtin) {
         case o.BuiltinMethod.ConcatArray:
-          result = ListWrapper.concat(receiver, args[0]);
+          result = receiver.concat(...args);
           break;
         case o.BuiltinMethod.SubscribeObservable:
           result = receiver.subscribe({next: args[0]});
           break;
         case o.BuiltinMethod.Bind:
-          result = receiver.bind(args[0]);
+          result = receiver.bind(...args);
           break;
         default:
           throw new Error(`Unknown builtin method ${expr.builtin}`);

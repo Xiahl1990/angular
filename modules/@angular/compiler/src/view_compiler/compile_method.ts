@@ -6,7 +6,6 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {ListWrapper} from '../facade/collection';
 import {isPresent} from '../facade/lang';
 import * as o from '../output/output_ast';
 import {TemplateAst} from '../template_parser/template_ast';
@@ -59,12 +58,14 @@ export class CompileMethod {
 
   resetDebugInfoExpr(nodeIndex: number, templateAst: TemplateAst): o.Expression {
     var res = this._updateDebugContext(new _DebugState(nodeIndex, templateAst));
-    return isPresent(res) ? res : o.NULL_EXPR;
+    return res || o.NULL_EXPR;
   }
 
   resetDebugInfo(nodeIndex: number, templateAst: TemplateAst) {
     this._newState = new _DebugState(nodeIndex, templateAst);
   }
+
+  push(...stmts: o.Statement[]) { this.addStmts(stmts); }
 
   addStmt(stmt: o.Statement) {
     this._updateDebugContextIfNeeded();
@@ -73,7 +74,7 @@ export class CompileMethod {
 
   addStmts(stmts: o.Statement[]) {
     this._updateDebugContextIfNeeded();
-    ListWrapper.addAll(this._bodyStatements, stmts);
+    this._bodyStatements.push(...stmts);
   }
 
   finish(): o.Statement[] { return this._bodyStatements; }

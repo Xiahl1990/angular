@@ -1,3 +1,4 @@
+benchpress/src
 common/src
 compiler/src
 compiler/testing
@@ -11,3 +12,4 @@ platform-browser-dynamic/src
 platform-server/src
 platform-webworker/src
 platform-webworker-dynamic/src
+upgrade/src

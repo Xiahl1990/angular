@@ -7,7 +7,8 @@
  */
 
 import {AUTO_STYLE} from '@angular/core';
-import {StringWrapper, isNumber, isPresent} from '../facade/lang';
+
+import {isPresent} from '../facade/lang';
 import {AnimationKeyframe, AnimationStyles} from '../private_import_core';
 
 import {AnimationDriver} from './animation_driver';
@@ -82,7 +83,7 @@ function _resolveStyleUnit(
     val: string | number, userProvidedProp: string, formattedProp: string): string {
   var unit = '';
   if (_isPixelDimensionStyle(formattedProp) && val != 0 && val != '0') {
-    if (isNumber(val)) {
+    if (typeof val === 'number') {
       unit = 'px';
     } else if (_findDimensionalSuffix(val.toString()).length == 0) {
       throw new Error('Please provide a CSS unit value for ' + userProvidedProp + ':' + val);
@@ -97,7 +98,7 @@ const _$PERIOD = 46;
 
 function _findDimensionalSuffix(value: string): string {
   for (var i = 0; i < value.length; i++) {
-    var c = StringWrapper.charCodeAt(value, i);
+    var c = value.charCodeAt(i);
     if ((c >= _$0 && c <= _$9) || c == _$PERIOD) continue;
     return value.substring(i, value.length);
   }

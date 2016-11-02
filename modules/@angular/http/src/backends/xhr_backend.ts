@@ -13,7 +13,7 @@ import {Observer} from 'rxjs/Observer';
 
 import {ResponseOptions} from '../base_response_options';
 import {ContentType, ReadyState, RequestMethod, ResponseContentType, ResponseType} from '../enums';
-import {isPresent, isString} from '../facade/lang';
+import {isPresent} from '../facade/lang';
 import {Headers} from '../headers';
 import {getResponseURL, isSuccess} from '../http_utils';
 import {Connection, ConnectionBackend, XSRFStrategy} from '../interfaces';
@@ -57,7 +57,7 @@ export class XHRConnection implements Connection {
         // by IE10)
         let body = _xhr.response === undefined ? _xhr.responseText : _xhr.response;
         // Implicitly strip a potential XSSI prefix.
-        if (isString(body)) body = body.replace(XSSI_PREFIX, '');
+        if (typeof body === 'string') body = body.replace(XSSI_PREFIX, '');
         let headers = Headers.fromResponseHeaderString(_xhr.getAllResponseHeaders());
 
         let url = getResponseURL(_xhr);
@@ -187,7 +187,7 @@ export class CookieXSRFStrategy implements XSRFStrategy {
 
   configureRequest(req: Request) {
     let xsrfToken = __platform_browser_private__.getDOM().getCookie(this._cookieName);
-    if (xsrfToken && !req.headers.has(this._headerName)) {
+    if (xsrfToken) {
       req.headers.set(this._headerName, xsrfToken);
     }
   }

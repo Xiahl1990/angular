@@ -8,7 +8,7 @@
 
 import {Injectable} from '@angular/core';
 import * as chars from '../chars';
-import {NumberWrapper, StringJoiner, StringWrapper, isPresent} from '../facade/lang';
+import {NumberWrapper, isPresent} from '../facade/lang';
 
 export enum TokenType {
   Character,
@@ -93,7 +93,7 @@ export class Token {
 }
 
 function newCharacterToken(index: number, code: number): Token {
-  return new Token(index, TokenType.Character, code, StringWrapper.fromCharCode(code));
+  return new Token(index, TokenType.Character, code, String.fromCharCode(code));
 }
 
 function newIdentifierToken(index: number, text: string): Token {
@@ -133,8 +133,7 @@ class _Scanner {
   }
 
   advance() {
-    this.peek =
-        ++this.index >= this.length ? chars.$EOF : StringWrapper.charCodeAt(this.input, this.index);
+    this.peek = ++this.index >= this.length ? chars.$EOF : this.input.charCodeAt(this.index);
   }
 
   scanToken(): Token {
@@ -146,7 +145,7 @@ class _Scanner {
         peek = chars.$EOF;
         break;
       } else {
-        peek = StringWrapper.charCodeAt(input, index);
+        peek = input.charCodeAt(index);
       }
     }
 
@@ -187,16 +186,16 @@ class _Scanner {
       case chars.$SLASH:
       case chars.$PERCENT:
       case chars.$CARET:
-        return this.scanOperator(start, StringWrapper.fromCharCode(peek));
+        return this.scanOperator(start, String.fromCharCode(peek));
       case chars.$QUESTION:
         return this.scanComplexOperator(start, '?', chars.$PERIOD, '.');
       case chars.$LT:
       case chars.$GT:
-        return this.scanComplexOperator(start, StringWrapper.fromCharCode(peek), chars.$EQ, '=');
+        return this.scanComplexOperator(start, String.fromCharCode(peek), chars.$EQ, '=');
       case chars.$BANG:
       case chars.$EQ:
         return this.scanComplexOperator(
-            start, StringWrapper.fromCharCode(peek), chars.$EQ, '=', chars.$EQ, '=');
+            start, String.fromCharCode(peek), chars.$EQ, '=', chars.$EQ, '=');
       case chars.$AMPERSAND:
         return this.scanComplexOperator(start, '&', chars.$AMPERSAND, '&');
       case chars.$BAR:
@@ -207,7 +206,7 @@ class _Scanner {
     }
 
     this.advance();
-    return this.error(`Unexpected character [${StringWrapper.fromCharCode(peek)}]`, 0);
+    return this.error(`Unexpected character [${String.fromCharCode(peek)}]`, 0);
   }
 
   scanCharacter(start: number, code: number): Token {
@@ -275,42 +274,41 @@ class _Scanner {
       }
       this.advance();
     }
-    var str: string = this.input.substring(start, this.index);
-    var value: number = simple ? NumberWrapper.parseIntAutoRadix(str) : parseFloat(str);
+    const str: string = this.input.substring(start, this.index);
+    const value: number = simple ? NumberWrapper.parseIntAutoRadix(str) : parseFloat(str);
     return newNumberToken(start, value);
   }
 
   scanString(): Token {
-    var start: number = this.index;
-    var quote: number = this.peek;
+    const start: number = this.index;
+    const quote: number = this.peek;
     this.advance();  // Skip initial quote.
 
-    var buffer: StringJoiner;
-    var marker: number = this.index;
-    var input: string = this.input;
+    let buffer: string = '';
+    let marker: number = this.index;
+    let input: string = this.input;
 
     while (this.peek != quote) {
       if (this.peek == chars.$BACKSLASH) {
-        if (buffer == null) buffer = new StringJoiner();
-        buffer.add(input.substring(marker, this.index));
+        buffer += input.substring(marker, this.index);
         this.advance();
-        var unescapedCode: number;
+        let unescapedCode: number;
         if (this.peek == chars.$u) {
           // 4 character hex code for unicode character.
-          var hex: string = input.substring(this.index + 1, this.index + 5);
+          const hex: string = input.substring(this.index + 1, this.index + 5);
           try {
             unescapedCode = NumberWrapper.parseInt(hex, 16);
           } catch (e) {
             return this.error(`Invalid unicode escape [\\u${hex}]`, 0);
           }
-          for (var i: number = 0; i < 5; i++) {
+          for (let i: number = 0; i < 5; i++) {
             this.advance();
           }
         } else {
           unescapedCode = unescape(this.peek);
           this.advance();
         }
-        buffer.add(StringWrapper.fromCharCode(unescapedCode));
+        buffer += String.fromCharCode(unescapedCode);
         marker = this.index;
       } else if (this.peek == chars.$EOF) {
         return this.error('Unterminated quote', 0);
@@ -319,16 +317,10 @@ class _Scanner {
       }
     }
 
-    var last: string = input.substring(marker, this.index);
+    const last: string = input.substring(marker, this.index);
     this.advance();  // Skip terminating quote.
 
-    // Compute the unescaped string value.
-    var unescaped: string = last;
-    if (buffer != null) {
-      buffer.add(last);
-      unescaped = buffer.toString();
-    }
-    return newStringToken(start, unescaped);
+    return newStringToken(start, buffer + last);
   }
 
   error(message: string, offset: number): Token {

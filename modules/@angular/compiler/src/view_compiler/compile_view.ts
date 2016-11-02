@@ -8,33 +8,46 @@
 
 import {AnimationEntryCompileResult} from '../animation/animation_compiler';
 import {CompileDirectiveMetadata, CompileIdentifierMetadata, CompilePipeMetadata} from '../compile_metadata';
+import {EventHandlerVars, NameResolver} from '../compiler_util/expression_converter';
+import {createPureProxy} from '../compiler_util/identifier_util';
 import {CompilerConfig} from '../config';
-import {ListWrapper, MapWrapper} from '../facade/collection';
+import {MapWrapper} from '../facade/collection';
 import {isPresent} from '../facade/lang';
 import {Identifiers, resolveIdentifier} from '../identifiers';
 import * as o from '../output/output_ast';
 import {ViewType} from '../private_import_core';
 
-import {CompileBinding} from './compile_binding';
 import {CompileElement, CompileNode} from './compile_element';
 import {CompileMethod} from './compile_method';
 import {CompilePipe} from './compile_pipe';
 import {CompileQuery, addQueryToTokenMap, createQueryList} from './compile_query';
-import {EventHandlerVars} from './constants';
-import {NameResolver} from './expression_converter';
-import {createPureProxy, getPropertyInView, getViewFactoryName} from './util';
+import {getPropertyInView, getViewFactoryName} from './util';
+
+export enum CompileViewRootNodeType {
+  Node,
+  ViewContainer,
+  NgContent
+}
+
+export class CompileViewRootNode {
+  constructor(
+      public type: CompileViewRootNodeType, public expr: o.Expression,
+      public ngContentIndex?: number) {}
+}
 
 export class CompileView implements NameResolver {
   public viewType: ViewType;
   public viewQueries: Map<any, CompileQuery[]>;
 
+  public viewChildren: o.Expression[] = [];
+
   public nodes: CompileNode[] = [];
-  // root nodes or AppElements for ViewContainers
-  public rootNodesOrAppElements: o.Expression[] = [];
 
-  public bindings: CompileBinding[] = [];
+  public rootNodes: CompileViewRootNode[] = [];
+  public lastRenderNode: o.Expression = o.NULL_EXPR;
 
-  public classStatements: o.Statement[] = [];
+  public viewContainerAppElements: o.Expression[] = [];
+
   public createMethod: CompileMethod;
   public animationBindingsMethod: CompileMethod;
   public injectorGetMethod: CompileMethod;
@@ -47,12 +60,12 @@ export class CompileView implements NameResolver {
   public afterViewLifecycleCallbacksMethod: CompileMethod;
   public destroyMethod: CompileMethod;
   public detachMethod: CompileMethod;
-  public eventHandlerMethods: o.ClassMethod[] = [];
+  public methods: o.ClassMethod[] = [];
 
+  public ctorStmts: o.Statement[] = [];
   public fields: o.ClassField[] = [];
   public getters: o.ClassGetter[] = [];
   public disposables: o.Expression[] = [];
-  public subscriptions: o.Expression[] = [];
 
   public componentView: CompileView;
   public purePipes = new Map<string, CompilePipe>();
@@ -102,21 +115,11 @@ export class CompileView implements NameResolver {
     var viewQueries = new Map<any, CompileQuery[]>();
     if (this.viewType === ViewType.COMPONENT) {
       var directiveInstance = o.THIS_EXPR.prop('context');
-      ListWrapper.forEachWithIndex(this.component.viewQueries, (queryMeta, queryIndex) => {
+      this.component.viewQueries.forEach((queryMeta, queryIndex) => {
         var propName = `_viewQuery_${queryMeta.selectors[0].name}_${queryIndex}`;
         var queryList = createQueryList(queryMeta, directiveInstance, propName, this);
         var query = new CompileQuery(queryMeta, queryList, directiveInstance, this);
         addQueryToTokenMap(viewQueries, query);
-      });
-      var constructorViewQueryCount = 0;
-      this.component.type.diDeps.forEach((dep) => {
-        if (isPresent(dep.viewQuery)) {
-          var queryList = o.THIS_EXPR.prop('declarationAppElement')
-                              .prop('componentConstructorViewQueries')
-                              .key(o.literal(constructorViewQueryCount++));
-          var query = new CompileQuery(dep.viewQuery, queryList, null, this);
-          addQueryToTokenMap(viewQueries, query);
-        }
       });
     }
     this.viewQueries = viewQueries;
@@ -147,48 +150,6 @@ export class CompileView implements NameResolver {
     } else {
       return null;
     }
-  }
-
-  createLiteralArray(values: o.Expression[]): o.Expression {
-    if (values.length === 0) {
-      return o.importExpr(resolveIdentifier(Identifiers.EMPTY_ARRAY));
-    }
-    var proxyExpr = o.THIS_EXPR.prop(`_arr_${this.literalArrayCount++}`);
-    var proxyParams: o.FnParam[] = [];
-    var proxyReturnEntries: o.Expression[] = [];
-    for (var i = 0; i < values.length; i++) {
-      var paramName = `p${i}`;
-      proxyParams.push(new o.FnParam(paramName));
-      proxyReturnEntries.push(o.variable(paramName));
-    }
-    createPureProxy(
-        o.fn(
-            proxyParams, [new o.ReturnStatement(o.literalArr(proxyReturnEntries))],
-            new o.ArrayType(o.DYNAMIC_TYPE)),
-        values.length, proxyExpr, this);
-    return proxyExpr.callFn(values);
-  }
-
-  createLiteralMap(entries: Array<Array<string|o.Expression>>): o.Expression {
-    if (entries.length === 0) {
-      return o.importExpr(resolveIdentifier(Identifiers.EMPTY_MAP));
-    }
-    var proxyExpr = o.THIS_EXPR.prop(`_map_${this.literalMapCount++}`);
-    var proxyParams: o.FnParam[] = [];
-    var proxyReturnEntries: Array<Array<string|o.Expression>> = [];
-    var values: o.Expression[] = [];
-    for (var i = 0; i < entries.length; i++) {
-      var paramName = `p${i}`;
-      proxyParams.push(new o.FnParam(paramName));
-      proxyReturnEntries.push([entries[i][0], o.variable(paramName)]);
-      values.push(<o.Expression>entries[i][1]);
-    }
-    createPureProxy(
-        o.fn(
-            proxyParams, [new o.ReturnStatement(o.literalMap(proxyReturnEntries))],
-            new o.MapType(o.DYNAMIC_TYPE)),
-        entries.length, proxyExpr, this);
-    return proxyExpr.callFn(values);
   }
 
   afterNodes() {

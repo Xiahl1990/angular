@@ -17,7 +17,6 @@ import {DomRootRenderer} from '@angular/platform-browser/src/dom/dom_renderer';
 
 import {MockSchemaRegistry} from '../../../compiler/testing/index';
 import {EventEmitter} from '../../src/facade/async';
-import {NumberWrapper} from '../../src/facade/lang';
 
 export function main() {
   let elSchema: MockSchemaRegistry;
@@ -338,7 +337,7 @@ export function main() {
 
       it('should support NaN', fakeAsync(() => {
            var ctx = _bindSimpleValue('age', Person);
-           ctx.componentInstance.age = NumberWrapper.NaN;
+           ctx.componentInstance.age = NaN;
            ctx.detectChanges(false);
 
            expect(renderLog.log).toEqual(['someProp=NaN']);
@@ -427,6 +426,14 @@ export function main() {
            expect(renderLog.loggedValues[1]['z']).toEqual(2);
          }));
 
+
+      it('should ignore empty bindings', fakeAsync(() => {
+           var ctx = _bindSimpleProp('[someProp]', TestData);
+           ctx.componentInstance.a = 'value';
+           ctx.detectChanges(false);
+
+           expect(renderLog.log).toEqual([]);
+         }));
 
       it('should support interpolation', fakeAsync(() => {
            var ctx = _bindSimpleProp('someProp="B{{a}}A"', TestData);

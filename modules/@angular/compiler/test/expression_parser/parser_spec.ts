@@ -8,7 +8,7 @@
 
 import {ASTWithSource, BindingPipe, Interpolation, ParserError, TemplateBinding} from '@angular/compiler/src/expression_parser/ast';
 import {Lexer} from '@angular/compiler/src/expression_parser/lexer';
-import {Parser, TemplateBindingParseResult} from '@angular/compiler/src/expression_parser/parser';
+import {Parser, SplitInterpolation, TemplateBindingParseResult} from '@angular/compiler/src/expression_parser/parser';
 import {expect} from '@angular/platform-browser/testing/matchers';
 
 import {isBlank, isPresent} from '../../src/facade/lang';
@@ -37,6 +37,10 @@ export function main() {
 
   function parseInterpolation(text: string, location: any = null): ASTWithSource {
     return createParser().parseInterpolation(text, location);
+  }
+
+  function splitInterpolation(text: string, location: any = null): SplitInterpolation {
+    return createParser().splitInterpolation(text, location);
   }
 
   function parseSimpleBinding(text: string, location: any = null): ASTWithSource {
@@ -70,7 +74,10 @@ export function main() {
         return;
       }
     }
-    throw Error(`Expected an error containing "${message}" to be reported`);
+    const errMsgs = ast.errors.map(err => err.message).join('\n');
+    throw Error(
+        `Expected an error containing "${message}" to be reported, but got the errors:\n` +
+        errMsgs);
   }
 
   function expectActionError(text: string, message: string) {
@@ -500,22 +507,20 @@ export function main() {
         validate(p);
       });
 
-      it('should parse a constant', () => {
-        var p = parseSimpleBinding('[1, 2]');
-        expect(unparse(p)).toEqual('[1, 2]');
-        validate(p);
-      });
-
-      it('should report when the given expression is not just a field name', () => {
+      it('should report when encountering pipes', () => {
         expectError(
-            validate(parseSimpleBinding('name + 1')),
-            'Host binding expression can only contain field access and constants');
+            validate(parseSimpleBinding('a | somePipe')),
+            'Host binding expression cannot contain pipes');
       });
 
       it('should report when encountering interpolation', () => {
         expectError(
             validate(parseSimpleBinding('{{exp}}')),
             'Got interpolation ({{}}) where expression was expected');
+      });
+
+      it('should report when encountering field write', () => {
+        expectError(validate(parseSimpleBinding('a = b')), 'Bindings cannot contain assignments');
       });
     });
 
@@ -538,6 +543,19 @@ export function main() {
       it('should be able to recover from a missing selector', () => recover('a.'));
       it('should be able to recover from a missing selector in a array literal',
          () => recover('[[a.], b, c]'));
+    });
+
+    describe('offsets', () => {
+      it('should retain the offsets of an interpolation', () => {
+        const interpolations = splitInterpolation('{{a}}  {{b}}  {{c}}');
+        expect(interpolations.offsets).toEqual([2, 9, 16]);
+      });
+
+      it('should retain the offsets into the expression AST of interpolations', () => {
+        const source = parseInterpolation('{{a}}  {{b}}  {{c}}');
+        const interpolation = source.ast as Interpolation;
+        expect(interpolation.expressions.map(e => e.span.start)).toEqual([2, 9, 16]);
+      });
     });
   });
 }

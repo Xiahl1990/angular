@@ -25,7 +25,7 @@ export interface StaticReflectorHost {
    * @param modulePath is a string identifier for a module as an absolute path.
    * @returns the metadata for the given module.
    */
-  getMetadataFor(modulePath: string): {[key: string]: any};
+  getMetadataFor(modulePath: string): {[key: string]: any}|{[key: string]: any}[];
 
   /**
    * Resolve a symbol from an import statement form, to the file where it is declared.
@@ -44,6 +44,8 @@ export interface StaticReflectorHost {
     animationMetadata: string,
     provider: string
   };
+
+  getCanonicalFileName(fileName: string): string;
 }
 
 /**
@@ -70,13 +72,12 @@ export class StaticReflector implements ReflectorReader {
   constructor(private host: StaticReflectorHost) { this.initializeConversionMap(); }
 
   importUri(typeOrFunc: StaticSymbol): string {
-    var staticSymbol = this.host.findDeclaration(typeOrFunc.filePath, typeOrFunc.name, '');
+    const staticSymbol = this.host.findDeclaration(typeOrFunc.filePath, typeOrFunc.name, '');
     return staticSymbol ? staticSymbol.filePath : null;
   }
 
   resolveIdentifier(name: string, moduleUrl: string, runtime: any): any {
-    const result = this.host.findDeclaration(moduleUrl, name, '');
-    return result;
+    return this.host.findDeclaration(moduleUrl, name, '');
   }
 
   resolveEnum(enumIdentifier: any, name: string): any {
@@ -157,14 +158,15 @@ export class StaticReflector implements ReflectorReader {
     }
   }
 
-  hasLifecycleHook(type: any, lcInterface: /*Type*/ any, lcProperty: string): boolean {
+  hasLifecycleHook(type: any, lcProperty: string): boolean {
     if (!(type instanceof StaticSymbol)) {
       throw new Error(
           `hasLifecycleHook received ${JSON.stringify(type)} which is not a StaticSymbol`);
     }
-    let classMetadata = this.getTypeMetadata(type);
-    let members = classMetadata ? classMetadata['members'] : null;
-    let member: any[] = members ? members[lcProperty] : null;
+    const classMetadata = this.getTypeMetadata(type);
+    const members = classMetadata ? classMetadata['members'] : null;
+    const member: any[] =
+        members && members.hasOwnProperty(lcProperty) ? members[lcProperty] : null;
     return member ? member.some(a => a['__symbolic'] == 'method') : false;
   }
 
@@ -235,9 +237,9 @@ export class StaticReflector implements ReflectorReader {
 
   /** @internal */
   public simplify(context: StaticSymbol, value: any): any {
-    let _this = this;
+    const _this = this;
     let scope = BindingScope.empty;
-    let calling = new Map<StaticSymbol, boolean>();
+    const calling = new Map<StaticSymbol, boolean>();
 
     function simplifyInContext(context: StaticSymbol, value: any, depth: number): any {
       function resolveReference(context: StaticSymbol, expression: any): StaticSymbol {
@@ -252,16 +254,15 @@ export class StaticReflector implements ReflectorReader {
       }
 
       function resolveReferenceValue(staticSymbol: StaticSymbol): any {
-        let result: any = staticSymbol;
-        let moduleMetadata = _this.getModuleMetadata(staticSymbol.filePath);
-        let declarationValue =
+        const moduleMetadata = _this.getModuleMetadata(staticSymbol.filePath);
+        const declarationValue =
             moduleMetadata ? moduleMetadata['metadata'][staticSymbol.name] : null;
         return declarationValue;
       }
 
       function isOpaqueToken(context: StaticSymbol, value: any): boolean {
         if (value && value.__symbolic === 'new' && value.expression) {
-          let target = value.expression;
+          const target = value.expression;
           if (target.__symbolic == 'reference') {
             return sameSymbol(resolveReference(context, target), _this.opaqueToken);
           }
@@ -365,6 +366,9 @@ export class StaticReflector implements ReflectorReader {
             result.push(value);
           }
           return result;
+        }
+        if (expression instanceof StaticSymbol) {
+          return expression;
         }
         if (expression) {
           if (expression['__symbolic']) {
@@ -529,7 +533,7 @@ export class StaticReflector implements ReflectorReader {
       }
     }
 
-    let result = simplifyInContext(context, value, 0);
+    const result = simplifyInContext(context, value, 0);
     if (shouldIgnore(result)) {
       return undefined;
     }
@@ -544,8 +548,7 @@ export class StaticReflector implements ReflectorReader {
     if (!moduleMetadata) {
       moduleMetadata = this.host.getMetadataFor(module);
       if (Array.isArray(moduleMetadata)) {
-        moduleMetadata = (<Array<any>>moduleMetadata)
-                             .find(element => element.version === SUPPORTED_SCHEMA_VERSION) ||
+        moduleMetadata = moduleMetadata.find(md => md['version'] === SUPPORTED_SCHEMA_VERSION) ||
             moduleMetadata[0];
       }
       if (!moduleMetadata) {
@@ -562,12 +565,8 @@ export class StaticReflector implements ReflectorReader {
   }
 
   private getTypeMetadata(type: StaticSymbol): {[key: string]: any} {
-    let moduleMetadata = this.getModuleMetadata(type.filePath);
-    let result = moduleMetadata['metadata'][type.name];
-    if (!result) {
-      result = {__symbolic: 'class'};
-    }
-    return result;
+    const moduleMetadata = this.getModuleMetadata(type.filePath);
+    return moduleMetadata['metadata'][type.name] || {__symbolic: 'class'};
   }
 }
 
@@ -607,7 +606,7 @@ function produceErrorMessage(error: any): string {
 function mapStringMap(input: {[key: string]: any}, transform: (value: any, key: string) => any):
     {[key: string]: any} {
   if (!input) return {};
-  var result: {[key: string]: any} = {};
+  const result: {[key: string]: any} = {};
   Object.keys(input).forEach((key) => {
     let value = transform(input[key], key);
     if (!shouldIgnore(value)) {
@@ -632,8 +631,7 @@ abstract class BindingScope {
   public static empty: BindingScope = {resolve: name => BindingScope.missing};
 
   public static build(): BindingScopeBuilder {
-    let current = new Map<string, any>();
-    let parent: BindingScope = undefined;
+    const current = new Map<string, any>();
     return {
       define: function(name, value) {
         current.set(name, value);

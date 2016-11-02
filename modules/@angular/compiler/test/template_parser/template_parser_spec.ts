@@ -71,6 +71,116 @@ export function main() {
     }));
   }
 
+  describe('TemplateAstVisitor', () => {
+    function expectVisitedNode(visitor: TemplateAstVisitor, node: TemplateAst) {
+      expect(node.visit(visitor, null)).toEqual(node);
+    }
+
+    it('should visit NgContentAst', () => {
+      expectVisitedNode(
+          new class extends
+          NullVisitor{visitNgContent(ast: NgContentAst, context: any): any{return ast;}},
+          new NgContentAst(0, 0, null));
+    });
+
+    it('should visit EmbeddedTemplateAst', () => {
+      expectVisitedNode(
+          new class extends NullVisitor{
+            visitEmbeddedTemplate(ast: EmbeddedTemplateAst, context: any) { return ast; }
+          },
+          new EmbeddedTemplateAst([], [], [], [], [], [], false, [], 0, null));
+    });
+
+    it('should visit ElementAst', () => {
+      expectVisitedNode(
+          new class extends
+          NullVisitor{visitElement(ast: ElementAst, context: any) { return ast; }},
+          new ElementAst('foo', [], [], [], [], [], [], false, [], 0, null, null));
+    });
+
+    it('should visit RefererenceAst', () => {
+      expectVisitedNode(
+          new class extends
+          NullVisitor{visitReference(ast: ReferenceAst, context: any): any{return ast;}},
+          new ReferenceAst('foo', null, null));
+    });
+
+    it('should visit VariableAst', () => {
+      expectVisitedNode(
+          new class extends
+          NullVisitor{visitVariable(ast: VariableAst, context: any): any{return ast;}},
+          new VariableAst('foo', 'bar', null));
+    });
+
+    it('should visit BoundEventAst', () => {
+      expectVisitedNode(
+          new class extends
+          NullVisitor{visitEvent(ast: BoundEventAst, context: any): any{return ast;}},
+          new BoundEventAst('foo', 'bar', 'goo', null, null));
+    });
+
+    it('should visit BoundElementPropertyAst', () => {
+      expectVisitedNode(
+          new class extends NullVisitor{
+            visitElementProperty(ast: BoundElementPropertyAst, context: any): any{return ast;}
+          },
+          new BoundElementPropertyAst('foo', null, null, false, null, 'bar', null));
+    });
+
+    it('should visit AttrAst', () => {
+      expectVisitedNode(
+          new class extends NullVisitor{visitAttr(ast: AttrAst, context: any): any{return ast;}},
+          new AttrAst('foo', 'bar', null));
+    });
+
+    it('should visit BoundTextAst', () => {
+      expectVisitedNode(
+          new class extends
+          NullVisitor{visitBoundText(ast: BoundTextAst, context: any): any{return ast;}},
+          new BoundTextAst(null, 0, null));
+    });
+
+    it('should visit TextAst', () => {
+      expectVisitedNode(
+          new class extends NullVisitor{visitText(ast: TextAst, context: any): any{return ast;}},
+          new TextAst('foo', 0, null));
+    });
+
+    it('should visit DirectiveAst', () => {
+      expectVisitedNode(
+          new class extends
+          NullVisitor{visitDirective(ast: DirectiveAst, context: any): any{return ast;}},
+          new DirectiveAst(null, [], [], [], null));
+    });
+
+    it('should visit DirectiveAst', () => {
+      expectVisitedNode(
+          new class extends NullVisitor{
+            visitDirectiveProperty(ast: BoundDirectivePropertyAst, context: any): any{return ast;}
+          },
+          new BoundDirectivePropertyAst('foo', 'bar', null, null));
+    });
+
+    it('should skip the typed call of a visitor if visit() returns a truthy value', () => {
+      const visitor = new class extends ThrowingVisitor {
+        visit(ast: TemplateAst, context: any): any { return true; }
+      };
+      const nodes: TemplateAst[] = [
+        new NgContentAst(0, 0, null),
+        new EmbeddedTemplateAst([], [], [], [], [], [], false, [], 0, null),
+        new ElementAst('foo', [], [], [], [], [], [], false, [], 0, null, null),
+        new ReferenceAst('foo', null, null), new VariableAst('foo', 'bar', null),
+        new BoundEventAst('foo', 'bar', 'goo', null, null),
+        new BoundElementPropertyAst('foo', null, null, false, null, 'bar', null),
+        new AttrAst('foo', 'bar', null), new BoundTextAst(null, 0, null),
+        new TextAst('foo', 0, null), new DirectiveAst(null, [], [], [], null),
+        new BoundDirectivePropertyAst('foo', 'bar', null, null)
+      ];
+      const result = templateVisitAll(visitor, nodes, null);
+      expect(result).toEqual(new Array(nodes.length).fill(true));
+    });
+  });
+
   describe('TemplateParser template transform', () => {
     beforeEach(() => { TestBed.configureCompiler({providers: TEST_COMPILER_PROVIDERS}); });
 
@@ -164,12 +274,17 @@ export function main() {
           });
 
           it('should parse ngContent', () => {
-            var parsed = parse('<ng-content select="a">', []);
+            const parsed = parse('<ng-content select="a"></ng-content>', []);
+            expect(humanizeTplAst(parsed)).toEqual([[NgContentAst]]);
+          });
+
+          it('should parse ngContent when it contains WS only', () => {
+            const parsed = parse('<ng-content select="a">    \n   </ng-content>', []);
             expect(humanizeTplAst(parsed)).toEqual([[NgContentAst]]);
           });
 
           it('should parse ngContent regardless the namespace', () => {
-            var parsed = parse('<svg><ng-content></ng-content></svg>', []);
+            const parsed = parse('<svg><ng-content></ng-content></svg>', []);
             expect(humanizeTplAst(parsed)).toEqual([
               [ElementAst, ':svg:svg'],
               [NgContentAst],
@@ -1146,7 +1261,7 @@ Reference "#a" is defined several times ("<div #a></div><div [ERROR ->]#a></div>
         });
 
         describe('content projection', () => {
-          var compCounter: any /** TODO #9100 */;
+          var compCounter: number;
           beforeEach(() => { compCounter = 0; });
 
           function createComp(
@@ -1308,10 +1423,11 @@ Reference "#a" is defined several times ("<div #a></div><div [ERROR ->]#a></div>
         });
 
         describe('error cases', () => {
-          it('should report when ng-content has content', () => {
+          it('should report when ng-content has non WS content', () => {
             expect(() => parse('<ng-content>content</ng-content>', []))
-                .toThrowError(`Template parse errors:
-<ng-content> element cannot have content. <ng-content> must be immediately followed by </ng-content> ("[ERROR ->]<ng-content>content</ng-content>"): TestComp@0:0`);
+                .toThrowError(
+                    `Template parse errors:\n` +
+                    `<ng-content> element cannot have content. ("[ERROR ->]<ng-content>content</ng-content>"): TestComp@0:0`);
           });
 
           it('should treat *attr on a template element as valid',
@@ -1379,8 +1495,12 @@ Parser Error: Unexpected token 'b' at column 3 in [a b] in TestComp@0:5 ("<div [
                   {moduleUrl: someModuleUrl, name: 'DirB', reference: {} as Type<any>}),
               template: new CompileTemplateMetadata({ngContentSelectors: []})
             });
-            expect(() => parse('<div>', [dirB, dirA])).toThrowError(`Template parse errors:
-More than one component: DirB,DirA ("[ERROR ->]<div>"): TestComp@0:0`);
+            expect(() => parse('<div>', [dirB, dirA]))
+                .toThrowError(
+                    `Template parse errors:\n` +
+                    `More than one component matched on this element.\n` +
+                    `Make sure that only one component's selector can match a given element.\n` +
+                    `Conflicting components: DirB,DirA ("[ERROR ->]<div>"): TestComp@0:0`);
           });
 
           it('should not allow components or element bindings nor dom events on explicit embedded templates',
@@ -1614,6 +1734,35 @@ Property binding a not used by any directive on an embedded template. Make sure 
             ]);
           });
 
+          it('should support endSourceSpan for elements', () => {
+            const tagSel = CompileDirectiveMetadata.create({
+              selector: 'circle',
+              type: new CompileTypeMetadata(
+                  {moduleUrl: someModuleUrl, name: 'elDir', reference: {} as Type<any>})
+            });
+            const result = parse('<circle></circle>', [tagSel]);
+            const circle = result[0] as ElementAst;
+            expect(circle.endSourceSpan).toBeDefined();
+            expect(circle.endSourceSpan.start.offset).toBe(8);
+            expect(circle.endSourceSpan.end.offset).toBe(17);
+          });
+
+          it('should report undefined for endSourceSpan for elements without an end-tag', () => {
+            const ulSel = CompileDirectiveMetadata.create({
+              selector: 'ul',
+              type: new CompileTypeMetadata(
+                  {moduleUrl: someModuleUrl, name: 'ulDir', reference: {} as Type<any>})
+            });
+            const liSel = CompileDirectiveMetadata.create({
+              selector: 'li',
+              type: new CompileTypeMetadata(
+                  {moduleUrl: someModuleUrl, name: 'liDir', reference: {} as Type<any>})
+            });
+            const result = parse('<ul><li><li></ul>', [ulSel, liSel]);
+            const ul = result[0] as ElementAst;
+            const li = ul.children[0] as ElementAst;
+            expect(li.endSourceSpan).toBe(null);
+          });
         });
 
         describe('pipes', () => {
@@ -1819,14 +1968,10 @@ class TemplateContentProjectionHumanizer implements TemplateAstVisitor {
   visitDirectiveProperty(ast: BoundDirectivePropertyAst, context: any): any { return null; }
 }
 
-class FooAstTransformer implements TemplateAstVisitor {
+class ThrowingVisitor implements TemplateAstVisitor {
   visitNgContent(ast: NgContentAst, context: any): any { throw 'not implemented'; }
   visitEmbeddedTemplate(ast: EmbeddedTemplateAst, context: any): any { throw 'not implemented'; }
-  visitElement(ast: ElementAst, context: any): any {
-    if (ast.name != 'div') return ast;
-    return new ElementAst(
-        'foo', [], [], [], [], [], [], false, [], ast.ngContentIndex, ast.sourceSpan);
-  }
+  visitElement(ast: ElementAst, context: any): any { throw 'not implemented'; }
   visitReference(ast: ReferenceAst, context: any): any { throw 'not implemented'; }
   visitVariable(ast: VariableAst, context: any): any { throw 'not implemented'; }
   visitEvent(ast: BoundEventAst, context: any): any { throw 'not implemented'; }
@@ -1840,12 +1985,37 @@ class FooAstTransformer implements TemplateAstVisitor {
   }
 }
 
+class FooAstTransformer extends ThrowingVisitor {
+  visitElement(ast: ElementAst, context: any): any {
+    if (ast.name != 'div') return ast;
+    return new ElementAst(
+        'foo', [], [], [], [], [], [], false, [], ast.ngContentIndex, ast.sourceSpan,
+        ast.endSourceSpan);
+  }
+}
+
 class BarAstTransformer extends FooAstTransformer {
   visitElement(ast: ElementAst, context: any): any {
     if (ast.name != 'foo') return ast;
     return new ElementAst(
-        'bar', [], [], [], [], [], [], false, [], ast.ngContentIndex, ast.sourceSpan);
+        'bar', [], [], [], [], [], [], false, [], ast.ngContentIndex, ast.sourceSpan,
+        ast.endSourceSpan);
   }
+}
+
+class NullVisitor implements TemplateAstVisitor {
+  visitNgContent(ast: NgContentAst, context: any): any {}
+  visitEmbeddedTemplate(ast: EmbeddedTemplateAst, context: any): any {}
+  visitElement(ast: ElementAst, context: any): any {}
+  visitReference(ast: ReferenceAst, context: any): any {}
+  visitVariable(ast: VariableAst, context: any): any {}
+  visitEvent(ast: BoundEventAst, context: any): any {}
+  visitElementProperty(ast: BoundElementPropertyAst, context: any): any {}
+  visitAttr(ast: AttrAst, context: any): any {}
+  visitBoundText(ast: BoundTextAst, context: any): any {}
+  visitText(ast: TextAst, context: any): any {}
+  visitDirective(ast: DirectiveAst, context: any): any {}
+  visitDirectiveProperty(ast: BoundDirectivePropertyAst, context: any): any {}
 }
 
 class ArrayConsole implements Console {

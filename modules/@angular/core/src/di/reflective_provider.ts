@@ -6,8 +6,8 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {ListWrapper, MapWrapper} from '../facade/collection';
-import {isArray, isBlank, isPresent} from '../facade/lang';
+import {MapWrapper} from '../facade/collection';
+import {isBlank, isPresent} from '../facade/lang';
 import {reflector} from '../reflection/reflection';
 import {Type} from '../type';
 
@@ -170,7 +170,7 @@ export function mergeResolvedReflectiveProviders(
       var resolvedProvider: ResolvedReflectiveProvider;
       if (provider.multiProvider) {
         resolvedProvider = new ResolvedReflectiveProvider_(
-            provider.key, ListWrapper.clone(provider.resolvedFactories), provider.multiProvider);
+            provider.key, provider.resolvedFactories.slice(), provider.multiProvider);
       } else {
         resolvedProvider = provider;
       }
@@ -225,7 +225,7 @@ function _extractToken(
   var token: any /** TODO #9100 */ = null;
   var optional = false;
 
-  if (!isArray(metadata)) {
+  if (!Array.isArray(metadata)) {
     if (metadata instanceof Inject) {
       return _createDependency(metadata.token, optional, null, null, depProps);
     } else {

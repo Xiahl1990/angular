@@ -109,12 +109,14 @@ export declare class AnimationStyleMetadata extends AnimationMetadata {
 /** @experimental */
 export declare class AnimationTransitionEvent {
     fromState: string;
+    phaseName: string;
     toState: string;
     totalTime: number;
-    constructor({fromState, toState, totalTime}: {
+    constructor({fromState, toState, totalTime, phaseName}: {
         fromState: string;
         toState: string;
         totalTime: number;
+        phaseName: string;
     });
 }
 
@@ -695,6 +697,7 @@ export declare class QueryList<T> {
     last: T;
     length: number;
     filter(fn: (item: T, index: number, array: T[]) => boolean): T[];
+    find(fn: (item: T, index: number, array: T[]) => boolean): T;
     forEach(fn: (item: T, index: number, array: T[]) => void): void;
     map<U>(fn: (item: T, index: number, array: T[]) => U): U[];
     notifyOnChanges(): void;

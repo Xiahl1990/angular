@@ -6,7 +6,12 @@
  * found in the LICENSE file at https://angular.io/license
  */
 
-import {global} from './lang';
+import {Directive, Input} from '@angular/core';
 
-export var Math = global.Math;
-export var NaN: any /** TODO #???? */ = typeof NaN;
+@Directive({
+  selector: '[thirdParty]',
+  host: {'[title]': 'thirdParty'},
+})
+export class ThirdPartyDirective {
+  @Input() thirdParty: string;
+}

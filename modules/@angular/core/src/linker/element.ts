@@ -7,7 +7,6 @@
  */
 
 import {Injector} from '../di/injector';
-import {ListWrapper} from '../facade/collection';
 import {isPresent} from '../facade/lang';
 
 import {ElementRef} from './element_ref';
@@ -23,11 +22,10 @@ import {ViewType} from './view_type';
  * that is needed for later instantiations.
  */
 export class AppElement {
-  public nestedViews: AppView<any>[] = null;
-  public componentView: AppView<any> = null;
+  public nestedViews: AppView<any>[];
+  public componentView: AppView<any>;
 
   public component: any;
-  public componentConstructorViewQueries: QueryList<any>[];
 
   constructor(
       public index: number, public parentIndex: number, public parentView: AppView<any>,
@@ -37,15 +35,37 @@ export class AppElement {
 
   get vcRef(): ViewContainerRef_ { return new ViewContainerRef_(this); }
 
-  initComponent(
-      component: any, componentConstructorViewQueries: QueryList<any>[], view: AppView<any>) {
+  initComponent(component: any, view: AppView<any>) {
     this.component = component;
-    this.componentConstructorViewQueries = componentConstructorViewQueries;
     this.componentView = view;
   }
 
   get parentInjector(): Injector { return this.parentView.injector(this.parentIndex); }
   get injector(): Injector { return this.parentView.injector(this.index); }
+
+  detectChangesInNestedViews(throwOnChange: boolean): void {
+    if (this.nestedViews) {
+      for (var i = 0; i < this.nestedViews.length; i++) {
+        this.nestedViews[i].detectChanges(throwOnChange);
+      }
+    }
+  }
+
+  destroyNestedViews(): void {
+    if (this.nestedViews) {
+      for (var i = 0; i < this.nestedViews.length; i++) {
+        this.nestedViews[i].destroy();
+      }
+    }
+  }
+
+  visitNestedViewRootNodes<C>(cb: (node: any, ctx: C) => void, c: C): void {
+    if (this.nestedViews) {
+      for (var i = 0; i < this.nestedViews.length; i++) {
+        this.nestedViews[i].visitRootNodesInternal(cb, c);
+      }
+    }
+  }
 
   mapNestedViews(nestedViewClass: any, callback: Function): any[] {
     var result: any[] /** TODO #9100 */ = [];
@@ -69,8 +89,8 @@ export class AppElement {
       nestedViews = [];
       this.nestedViews = nestedViews;
     }
-    ListWrapper.removeAt(nestedViews, previousIndex);
-    ListWrapper.insert(nestedViews, currentIndex, view);
+    nestedViews.splice(previousIndex, 1);
+    nestedViews.splice(currentIndex, 0, view);
     var refRenderNode: any /** TODO #9100 */;
     if (currentIndex > 0) {
       var prevView = nestedViews[currentIndex - 1];
@@ -93,7 +113,7 @@ export class AppElement {
       nestedViews = [];
       this.nestedViews = nestedViews;
     }
-    ListWrapper.insert(nestedViews, viewIndex, view);
+    nestedViews.splice(viewIndex, 0, view);
     var refRenderNode: any /** TODO #9100 */;
     if (viewIndex > 0) {
       var prevView = nestedViews[viewIndex - 1];
@@ -108,7 +128,7 @@ export class AppElement {
   }
 
   detachView(viewIndex: number): AppView<any> {
-    var view = ListWrapper.removeAt(this.nestedViews, viewIndex);
+    const view = this.nestedViews.splice(viewIndex, 1)[0];
     if (view.type === ViewType.COMPONENT) {
       throw new Error(`Component views can't be moved!`);
     }
